@@ -9,7 +9,6 @@ import {
   Lock,
   EyeOff,
   ArrowRight,
-  Sparkles,
   UtensilsCrossed,
   ShoppingCart,
   Car,
@@ -173,15 +172,16 @@ export default function LandingPage() {
         {/* hero */}
         <header className="relative grid items-center gap-12 pt-10 md:grid-cols-2 md:pt-16">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3.5 py-1.5 text-xs font-semibold text-brand-soft">
-              <Sparkles size={13} />
-              Private by design · Free while in beta
-            </div>
+            <p className="mb-5 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-good" />
+              Free beta
+              <span className="h-px w-8 bg-border" />
+              Private by design
+            </p>
             <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight md:text-5xl">
-              Money clarity,{" "}
-              <span className="bg-gradient-to-r from-brand-soft to-brand bg-clip-text text-transparent">
-                without the spreadsheet
-              </span>
+              Money clarity,
+              <br />
+              without the spreadsheet.
             </h1>
             <p className="mt-4 max-w-md text-lg leading-relaxed text-muted">
               Track every rupee in three taps, see where it goes, and split
@@ -215,10 +215,14 @@ export default function LandingPage() {
 
         {/* features */}
         <section className="relative mt-24">
-          <h2 className="text-center text-2xl font-extrabold tracking-tight md:text-3xl">
+          <p className="mb-4 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+            <span className="h-px w-8 bg-brand/50" />
+            What you get
+          </p>
+          <h2 className="max-w-md text-2xl font-extrabold tracking-tight md:text-3xl">
             Everything you need. Nothing you don't.
           </h2>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
@@ -238,10 +242,10 @@ export default function LandingPage() {
         <section className="relative mt-24 overflow-hidden rounded-[32px] border border-brand/25 bg-gradient-to-b from-brand/10 to-transparent p-8 md:p-12">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(70%_100%_at_50%_0%,rgba(139,92,246,0.18),transparent)]" />
           <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3.5 py-1.5 text-xs font-semibold text-brand-soft">
-              <ShieldCheck size={13} />
+            <p className="mb-4 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+              <span className="h-px w-8 bg-brand/50" />
               Privacy first
-            </div>
+            </p>
             <h2 className="max-w-lg text-2xl font-extrabold tracking-tight md:text-3xl">
               Your spending says everything about you. We keep it quiet.
             </h2>
