@@ -5,6 +5,10 @@ const KEY = "spendly-theme";
 
 function apply(t: Theme) {
   document.documentElement.setAttribute("data-theme", t);
+  // Keep browser/OS chrome in sync with the app theme.
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", t === "light" ? "#f9fafb" : "#0a0a0b");
 }
 
 function initialTheme(): Theme {

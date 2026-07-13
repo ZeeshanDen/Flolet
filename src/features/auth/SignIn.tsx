@@ -15,6 +15,30 @@ export default function SignIn() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Map Firebase error codes to friendly copy — raw messages leak
+  // implementation detail and read like stack traces.
+  const friendly = (err: unknown): string => {
+    const code = (err as { code?: string })?.code ?? "";
+    switch (code) {
+      case "auth/invalid-credential":
+      case "auth/wrong-password":
+      case "auth/user-not-found":
+        return "Wrong email or password.";
+      case "auth/email-already-in-use":
+        return "An account with this email already exists — sign in instead.";
+      case "auth/weak-password":
+        return "Password must be at least 6 characters.";
+      case "auth/invalid-email":
+        return "That email address doesn't look right.";
+      case "auth/too-many-requests":
+        return "Too many attempts — wait a minute and try again.";
+      case "auth/network-request-failed":
+        return "Network error — check your connection.";
+      default:
+        return "Something went wrong. Please try again.";
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -23,7 +47,7 @@ export default function SignIn() {
       if (mode === "in") await signInEmail(email, password);
       else await signUpEmail(email, password, name);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(friendly(err));
     } finally {
       setBusy(false);
     }
@@ -34,12 +58,13 @@ export default function SignIn() {
     try {
       await signInGoogle();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign-in failed");
+      const code = (err as { code?: string })?.code ?? "";
+      if (code !== "auth/popup-closed-by-user") setError(friendly(err));
     }
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col justify-center px-6">
+    <div className="safe-top mx-auto flex h-full max-w-md flex-col justify-center px-6">
       <Link
         to="/"
         className="mb-6 flex items-center gap-1.5 text-sm text-muted"

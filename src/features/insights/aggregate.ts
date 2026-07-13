@@ -36,6 +36,12 @@ export function categoryBreakdown(
     .sort((a, b) => b.value - a.value);
 }
 
+/** Format an ISO date defensively — bad docs must not crash the screen. */
+function safeFormat(iso: string, fmt: string): string {
+  const d = parseISO(iso);
+  return isNaN(d.getTime()) ? "?" : format(d, fmt);
+}
+
 /** Daily totals across a month prefix (yyyy-mm). */
 export function dailyBuckets(expenses: Expense[]): Bucket[] {
   const map = new Map<string, number>();
@@ -45,7 +51,7 @@ export function dailyBuckets(expenses: Expense[]): Bucket[] {
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
     .map(([key, total]) => ({
       key,
-      label: format(parseISO(key), "d"),
+      label: safeFormat(key, "d"),
       total: Math.round(total * 100) / 100,
     }));
 }
@@ -61,7 +67,7 @@ export function monthlyBuckets(expenses: Expense[]): Bucket[] {
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
     .map(([key, total]) => ({
       key,
-      label: format(parseISO(key + "-01"), "MMM"),
+      label: safeFormat(key + "-01", "MMM"),
       total: Math.round(total * 100) / 100,
     }));
 }

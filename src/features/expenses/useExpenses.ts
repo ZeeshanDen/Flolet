@@ -25,14 +25,27 @@ export function useExpenses() {
       collection(db, "users", user.uid, "expenses"),
       orderBy("date", "desc"),
     );
-    return onSnapshot(q, (snap) => {
-      const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Expense);
-      rows.sort((a, b) =>
-        a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1,
-      );
-      setExpenses(rows);
-      setLoading(false);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        const rows = snap.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as Expense,
+        );
+        rows.sort((a, b) =>
+          a.date === b.date
+            ? b.createdAt - a.createdAt
+            : a.date < b.date
+              ? 1
+              : -1,
+        );
+        setExpenses(rows);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("expenses listener", err);
+        setLoading(false);
+      },
+    );
   }, [user]);
 
   // Distinct prior names for the entry typeahead.

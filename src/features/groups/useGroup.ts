@@ -30,35 +30,54 @@ export function useGroup(groupId: string | undefined) {
 
   useEffect(() => {
     if (!groupId) return;
-    return onSnapshot(doc(db, "groups", groupId), (snap) => {
-      setGroup(snap.exists() ? ({ id: snap.id, ...snap.data() } as Group) : null);
-      setLoading(false);
-    });
+    setGroup(null); // reset when switching groups — no stale flash
+    return onSnapshot(
+      doc(db, "groups", groupId),
+      (snap) => {
+        setGroup(
+          snap.exists() ? ({ id: snap.id, ...snap.data() } as Group) : null,
+        );
+        setLoading(false);
+      },
+      (err) => {
+        console.error("group listener", err);
+        setGroup(null);
+        setLoading(false);
+      },
+    );
   }, [groupId]);
 
   useEffect(() => {
     if (!groupId) return;
+    setExpenses([]);
     const q = query(
       collection(db, "groups", groupId, "expenses"),
       orderBy("date", "desc"),
     );
-    return onSnapshot(q, (snap) =>
-      setExpenses(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GroupExpense),
-      ),
+    return onSnapshot(
+      q,
+      (snap) =>
+        setExpenses(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GroupExpense),
+        ),
+      (err) => console.error("group expenses listener", err),
     );
   }, [groupId]);
 
   useEffect(() => {
     if (!groupId) return;
+    setSettlements([]);
     const q = query(
       collection(db, "groups", groupId, "settlements"),
       orderBy("date", "desc"),
     );
-    return onSnapshot(q, (snap) =>
-      setSettlements(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Settlement),
-      ),
+    return onSnapshot(
+      q,
+      (snap) =>
+        setSettlements(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Settlement),
+        ),
+      (err) => console.error("group settlements listener", err),
     );
   }, [groupId]);
 

@@ -11,12 +11,14 @@ export function useProfile() {
 
   useEffect(() => {
     if (!user) return;
-    return onSnapshot(doc(db, "users", user.uid), (s) =>
-      setProfile(s.exists() ? (s.data() as UserProfile) : null),
+    return onSnapshot(
+      doc(db, "users", user.uid),
+      (s) => setProfile(s.exists() ? (s.data() as UserProfile) : null),
+      (err) => console.error("profile listener", err),
     );
   }, [user]);
 
-  const currency = profile?.defaultCurrency ?? "USD";
+  const currency = profile?.defaultCurrency ?? "INR";
 
   const update = async (patch: Partial<UserProfile>) => {
     if (!user) return;

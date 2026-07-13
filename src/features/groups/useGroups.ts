@@ -6,9 +6,9 @@ import {
   onSnapshot,
   addDoc,
   doc,
+  setDoc,
   updateDoc,
   arrayUnion,
-  getDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -37,10 +37,17 @@ export function useGroups() {
       collection(db, "groups"),
       where("memberUids", "array-contains", user.uid),
     );
-    return onSnapshot(q, (snap) => {
-      setGroups(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Group));
-      setLoading(false);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        setGroups(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Group));
+        setLoading(false);
+      },
+      (err) => {
+        console.error("groups listener", err);
+        setLoading(false);
+      },
+    );
   }, [user]);
 
   useEffect(() => {
@@ -50,9 +57,15 @@ export function useGroups() {
       where("invitedEmail", "==", user.email),
       where("status", "==", "pending"),
     );
-    return onSnapshot(q, (snap) => {
-      setInvites(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Invite));
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        setInvites(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Invite),
+        );
+      },
+      (err) => console.error("invites listener", err),
+    );
   }, [user]);
 
   const createGroup = async (name: string, currency: string) => {
@@ -75,10 +88,13 @@ export function useGroups() {
     email: string,
   ) => {
     if (!user) return;
-    await addDoc(collection(db, "invites"), {
+    const invitedEmail = email.trim().toLowerCase();
+    // Deterministic id (`groupId_email`) so security rules can verify a
+    // pending invite exists when the invitee self-joins the group.
+    await setDoc(doc(db, "invites", `${groupId}_${invitedEmail}`), {
       groupId,
       groupName,
-      invitedEmail: email.trim().toLowerCase(),
+      invitedEmail,
       invitedByUid: user.uid,
       invitedByName: user.displayName || user.email || "Someone",
       status: "pending",
@@ -88,11 +104,10 @@ export function useGroups() {
 
   const acceptInvite = async (invite: Invite) => {
     if (!user) return;
-    const groupRef = doc(db, "groups", invite.groupId);
-    const snap = await getDoc(groupRef);
-    if (!snap.exists()) return;
+    // No pre-read: non-members can't read the group. Rules validate the join
+    // (self-only addition + pending invite) server-side.
     const member = memberFromUser(user);
-    await updateDoc(groupRef, {
+    await updateDoc(doc(db, "groups", invite.groupId), {
       memberUids: arrayUnion(user.uid),
       [`members.${user.uid}`]: member,
     });

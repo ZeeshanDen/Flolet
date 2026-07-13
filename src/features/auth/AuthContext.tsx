@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -54,7 +55,8 @@ async function ensureProfile(user: User) {
       defaultCurrency: "INR",
       ...(user.photoURL ? { photoURL: user.photoURL } : {}),
     };
-    await setDoc(ref, profile);
+    // merge:true — a second device racing here must not clobber later edits.
+    await setDoc(ref, profile, { merge: true });
     await seedDefaultCategories(user.uid);
   }
 }
@@ -97,7 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (auth.currentUser) await sendEmailVerification(auth.currentUser);
   };
 
-  const refreshVerification = async () => {
+  // Stable identity — VerifyEmail polls this in an interval effect.
+  const refreshVerification = useCallback(async () => {
     if (!auth.currentUser) return false;
     await reload(auth.currentUser);
     const v = auth.currentUser.emailVerified;
@@ -109,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
     }
     return v;
-  };
+  }, []);
 
   const logout = async () => {
     await signOut(auth);

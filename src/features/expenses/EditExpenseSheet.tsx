@@ -38,10 +38,13 @@ export default function EditExpenseSheet({
   }, [expense]);
 
   const numeric = parseFloat(amount) || 0;
-  const canSave = numeric > 0 && !!categoryId;
+  // Strict amount shape ("1.2.3" would parseFloat-truncate silently) + valid date.
+  const amountOk = /^\d{1,9}(\.\d{0,2})?$/.test(amount) && numeric > 0;
+  const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const canSave = amountOk && dateOk && !!categoryId;
 
   const save = async () => {
-    if (!expense || !canSave || !categoryId) return;
+    if (!expense || !canSave || !categoryId || busy) return;
     setBusy(true);
     const cat = categories.find((c) => c.id === categoryId);
     try {
@@ -52,17 +55,21 @@ export default function EditExpenseSheet({
         date,
       });
       onClose();
+    } catch (e) {
+      console.error("update expense", e);
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async () => {
-    if (!expense) return;
+    if (!expense || busy) return;
     setBusy(true);
     try {
       await deleteExpense(expense.id);
       onClose();
+    } catch (e) {
+      console.error("delete expense", e);
     } finally {
       setBusy(false);
     }
@@ -74,7 +81,8 @@ export default function EditExpenseSheet({
         <h2 className="text-lg font-extrabold">Edit expense</h2>
         <button
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted"
+          aria-label="Close"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted"
         >
           <X size={18} />
         </button>

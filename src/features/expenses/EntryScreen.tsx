@@ -13,9 +13,12 @@ import BottomSheet from "@/components/BottomSheet";
 import SplitEditor, { type SplitState } from "@/features/split/SplitEditor";
 import { resolveSplit, validateSplit } from "@/features/split/splitCalc";
 import { cn, currencySymbol, CURRENCIES } from "@/lib/utils";
+import { format } from "date-fns";
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local date, not UTC — toISOString() would date a 1am IST expense yesterday.
+const today = () => format(new Date(), "yyyy-MM-dd");
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "del"];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function EntryScreen() {
   const { user } = useAuth();
@@ -30,6 +33,7 @@ export default function EntryScreen() {
   const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Focus-mode sheet state
   const [keypadOpen, setKeypadOpen] = useState(false);
@@ -96,7 +100,10 @@ export default function EntryScreen() {
   }, [selectedGroup, numeric, split]);
 
   const canSave =
-    numeric > 0 && !!categoryId && (!splitActive || splitValid.ok);
+    numeric > 0 &&
+    !!categoryId &&
+    DATE_RE.test(date) && // cleared date input would brick History/Insights
+    (!splitActive || splitValid.ok);
 
   const reset = () => {
     setAmount("");
@@ -108,8 +115,9 @@ export default function EntryScreen() {
   };
 
   const save = async () => {
-    if (!canSave || !categoryId) return;
+    if (!canSave || !categoryId || saving) return; // saving guard: no double-tap dupes
     setSaving(true);
+    setSaveError(null);
     const cat = categories.find((c) => c.id === categoryId);
     const finalName = name.trim() || cat?.name || "";
     try {
@@ -137,6 +145,9 @@ export default function EntryScreen() {
       setSaved(true);
       setTimeout(() => setSaved(false), 1200);
       reset();
+    } catch (e) {
+      console.error("save expense", e);
+      setSaveError("Couldn't save — check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -175,11 +186,16 @@ export default function EntryScreen() {
           <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/70">
             {amount ? "Amount" : "Tap to enter amount"}
           </div>
-          <div className="mt-0.5 flex items-baseline gap-1.5">
+          <div className="mt-0.5 flex min-w-0 items-baseline gap-1.5">
             <span className="text-xl font-bold text-white/85">
               {currencySymbol(currency)}
             </span>
-            <span className="text-4xl font-extrabold leading-none tracking-tight text-white">
+            <span
+              className={cn(
+                "min-w-0 truncate font-extrabold leading-none tracking-tight text-white",
+                amount.length > 9 ? "text-2xl" : "text-4xl",
+              )}
+            >
               {amount || "0"}
             </span>
           </div>
@@ -275,6 +291,9 @@ export default function EntryScreen() {
 
       {/* Save — pinned above nav */}
       <div className="shrink-0 pb-3 pt-2">
+        {saveError && (
+          <p className="mb-2 text-center text-sm text-bad">{saveError}</p>
+        )}
         <button
           onClick={onSavePress}
           disabled={saving}
@@ -338,7 +357,8 @@ export default function EntryScreen() {
           </h2>
           <button
             onClick={() => setSplitOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted"
+            aria-label="Close split"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted"
           >
             <X size={18} />
           </button>

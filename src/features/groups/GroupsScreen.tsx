@@ -2,19 +2,34 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Users, Mail, Check } from "lucide-react";
 import { useGroups } from "@/features/groups/useGroups";
-import { CURRENCIES } from "@/lib/utils";
+import { CURRENCIES, currencySymbol } from "@/lib/utils";
 
 export default function GroupsScreen() {
-  const { groups, invites, createGroup, acceptInvite } = useGroups();
+  const { groups, invites, loading, createGroup, acceptInvite } = useGroups();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("INR");
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     if (!name.trim()) return;
-    await createGroup(name.trim(), currency);
-    setName("");
-    setCreating(false);
+    try {
+      await createGroup(name.trim(), currency);
+      setName("");
+      setCreating(false);
+    } catch (e) {
+      console.error("create group", e);
+      setError("Couldn't create the group — try again.");
+    }
+  };
+
+  const join = async (inv: Parameters<typeof acceptInvite>[0]) => {
+    try {
+      await acceptInvite(inv);
+    } catch (e) {
+      console.error("accept invite", e);
+      setError("Couldn't join the group — try again.");
+    }
   };
 
   return (
@@ -45,7 +60,9 @@ export default function GroupsScreen() {
             onChange={(e) => setCurrency(e.target.value)}
           >
             {CURRENCIES.map((c) => (
-              <option key={c}>{c}</option>
+              <option key={c} value={c}>
+                {currencySymbol(c)} {c}
+              </option>
             ))}
           </select>
           <button onClick={submit} className="btn-brand w-full">
@@ -70,10 +87,7 @@ export default function GroupsScreen() {
                     from {inv.invitedByName}
                   </p>
                 </div>
-                <button
-                  onClick={() => acceptInvite(inv)}
-                  className="btn-brand px-3 py-2"
-                >
+                <button onClick={() => join(inv)} className="btn-brand px-3 py-2">
                   <Check size={16} />
                   Join
                 </button>
@@ -83,7 +97,11 @@ export default function GroupsScreen() {
         </div>
       )}
 
-      {groups.length === 0 ? (
+      {error && <p className="mb-3 text-sm text-bad">{error}</p>}
+
+      {loading ? (
+        <p className="mt-10 text-center text-muted">Loading…</p>
+      ) : groups.length === 0 ? (
         <p className="mt-10 text-center text-muted">
           No groups yet. Create one to split expenses.
         </p>

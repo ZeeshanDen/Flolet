@@ -25,6 +25,15 @@ import { formatMoney, cn } from "@/lib/utils";
 
 type View = "month" | "year";
 
+// Theme-aware chart chrome — hardcoded dark hexes were unreadable in light mode.
+const tooltipStyle = {
+  background: "rgb(var(--card))",
+  border: "1px solid rgb(var(--border))",
+  borderRadius: 12,
+  color: "rgb(var(--text))",
+} as const;
+const tooltipItemStyle = { color: "rgb(var(--text))" } as const;
+
 export default function InsightsScreen() {
   const { expenses } = useExpenses();
   const { categories } = useCategories();
@@ -99,11 +108,19 @@ export default function InsightsScreen() {
 
       {/* Period nav */}
       <div className="mb-4 flex items-center justify-between">
-        <button onClick={() => step(-1)} className="p-2 text-muted">
+        <button
+          onClick={() => step(-1)}
+          aria-label="Previous period"
+          className="p-2 text-muted"
+        >
           <ChevronLeft />
         </button>
         <span className="font-semibold">{label}</span>
-        <button onClick={() => step(1)} className="p-2 text-muted">
+        <button
+          onClick={() => step(1)}
+          aria-label="Next period"
+          className="p-2 text-muted"
+        >
           <ChevronRight />
         </button>
       </div>
@@ -155,11 +172,8 @@ export default function InsightsScreen() {
                   </Pie>
                   <Tooltip
                     formatter={(v: number) => formatMoney(v, currency)}
-                    contentStyle={{
-                      background: "#1b1b1f",
-                      border: "1px solid #2a2a30",
-                      borderRadius: 12,
-                    }}
+                    contentStyle={tooltipStyle}
+                    itemStyle={tooltipItemStyle}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -198,17 +212,14 @@ export default function InsightsScreen() {
                 <BarChart data={buckets}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    tick={{ fill: "rgb(var(--muted))", fontSize: 11 }}
                     interval="preserveStartEnd"
                   />
                   <Tooltip
                     formatter={(v: number) => formatMoney(v, currency)}
-                    cursor={{ fill: "#ffffff10" }}
-                    contentStyle={{
-                      background: "#1b1b1f",
-                      border: "1px solid #2a2a30",
-                      borderRadius: 12,
-                    }}
+                    cursor={{ fill: "rgb(var(--text) / 0.06)" }}
+                    contentStyle={tooltipStyle}
+                    itemStyle={tooltipItemStyle}
                   />
                   <Bar dataKey="total" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                 </BarChart>

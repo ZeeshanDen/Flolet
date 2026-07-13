@@ -140,6 +140,14 @@ export function validateSplit(
   if (members.length === 0)
     return { ok: false, message: "Pick at least one person" };
 
+  // Negative per-member inputs are never meaningful for exact/percent/shares
+  // and would let shares sum correctly while individual owed amounts go < 0.
+  if (type === "exact" || type === "percent" || type === "shares") {
+    const hasNegative = members.some((uid) => (input[uid] ?? 0) < 0);
+    if (hasNegative)
+      return { ok: false, message: "Values can't be negative" };
+  }
+
   if (type === "exact") {
     const sum = members.reduce((s, uid) => s + (input[uid] ?? 0), 0);
     if (toCents(sum) !== toCents(total))
@@ -156,6 +164,17 @@ export function validateSplit(
   if (type === "shares") {
     const sum = members.reduce((s, uid) => s + (input[uid] ?? 0), 0);
     if (sum <= 0) return { ok: false, message: "Total shares must be > 0" };
+  }
+  if (type === "adjustment") {
+    // Every resolved share must stay >= 0 — an oversized adjustment would
+    // push other members' owed amounts negative.
+    const resolved = resolveSplit(total, type, members, input);
+    const hasNegative = members.some((uid) => (resolved[uid] ?? 0) < 0);
+    if (hasNegative)
+      return {
+        ok: false,
+        message: "Adjustments too large — someone's share went below zero",
+      };
   }
   return { ok: true };
 }

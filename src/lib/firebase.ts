@@ -25,10 +25,9 @@ const firebaseConfig = {
   appId: env.VITE_FIREBASE_APP_ID || "demo-app-id",
 };
 
-// Use the emulator only when no real project is configured, or when forced.
-// With real creds present, dev connects to the real project too.
-export const usingEmulator =
-  env.VITE_USE_EMULATOR === "true" || !env.VITE_FIREBASE_PROJECT_ID;
+// Emulator is explicit opt-in ONLY — a misbuilt bundle with a missing env
+// var must fail loudly against real Firebase, never silently hit 127.0.0.1.
+export const usingEmulator = env.VITE_USE_EMULATOR === "true";
 
 export const app = initializeApp(firebaseConfig);
 

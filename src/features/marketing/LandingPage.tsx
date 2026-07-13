@@ -148,7 +148,7 @@ function PhoneMock() {
 export default function LandingPage() {
   return (
     <div className="h-full overflow-y-auto">
-      <div className="relative mx-auto max-w-5xl px-6 pb-20">
+      <div className="safe-top relative mx-auto max-w-5xl px-6 pb-20">
         {/* glow */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(139,92,246,0.28),transparent_65%)]" />
 

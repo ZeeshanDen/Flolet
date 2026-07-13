@@ -13,7 +13,7 @@ const tabs = [
 export default function AppLayout() {
   return (
     <div className="mx-auto flex h-full max-w-md flex-col">
-      <main className="safe-top flex-1 overflow-y-auto pb-24">
+      <main className="safe-top flex-1 overflow-y-auto pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
 

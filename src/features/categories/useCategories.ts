@@ -24,19 +24,28 @@ export function useCategories() {
       collection(db, "users", user.uid, "categories"),
       orderBy("order"),
     );
-    return onSnapshot(q, (snap) => {
-      setCategories(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Category),
-      );
-      setLoading(false);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        setCategories(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Category),
+        );
+        setLoading(false);
+      },
+      (err) => {
+        console.error("categories listener", err);
+        setLoading(false);
+      },
+    );
   }, [user]);
 
   const addCategory = async (
     cat: Omit<Category, "id" | "order">,
   ): Promise<string | undefined> => {
     if (!user) return;
-    const order = categories.length;
+    // max+1, not length — deletes would otherwise create duplicate orders.
+    const order =
+      categories.reduce((m, c) => Math.max(m, c.order ?? 0), -1) + 1;
     const ref = await addDoc(
       collection(db, "users", user.uid, "categories"),
       { ...cat, order },

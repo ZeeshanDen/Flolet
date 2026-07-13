@@ -97,6 +97,32 @@ describe("validateSplit", () => {
       validateSplit(50, "percent", ["a", "b"], { a: 60, b: 40 }).ok,
     ).toBe(true);
   });
+
+  it("rejects negative inputs for exact/percent/shares", () => {
+    expect(
+      validateSplit(50, "exact", ["a", "b"], { a: -10, b: 60 }).ok,
+    ).toBe(false);
+    expect(
+      validateSplit(50, "percent", ["a", "b"], { a: 150, b: -50 }).ok,
+    ).toBe(false);
+    expect(
+      validateSplit(50, "shares", ["a", "b"], { a: -1, b: 3 }).ok,
+    ).toBe(false);
+  });
+
+  it("rejects adjustments that push a share below zero", () => {
+    // 30 equal = 10 each; +100 on b drives a and c negative.
+    expect(
+      validateSplit(30, "adjustment", ["a", "b", "c"], { b: 100 }).ok,
+    ).toBe(false);
+    expect(
+      validateSplit(30, "adjustment", ["a", "b", "c"], { b: 6 }).ok,
+    ).toBe(true);
+  });
+
+  it("rejects an empty member list", () => {
+    expect(validateSplit(50, "equal", [], {}).ok).toBe(false);
+  });
 });
 
 describe("computeBalances + simplifyDebts", () => {

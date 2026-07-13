@@ -11,13 +11,14 @@ import type { Expense } from "@/lib/types";
 
 function dayLabel(iso: string) {
   const d = parseISO(iso);
+  if (isNaN(d.getTime())) return "Unknown date"; // tolerate bad docs
   if (isToday(d)) return "Today";
   if (isYesterday(d)) return "Yesterday";
   return format(d, "EEE, d MMM yyyy");
 }
 
 export default function HistoryScreen() {
-  const { expenses } = useExpenses();
+  const { expenses, loading } = useExpenses();
   const { categories } = useCategories();
   const { currency } = useProfile();
   const [q, setQ] = useState("");
@@ -68,7 +69,9 @@ export default function HistoryScreen() {
       </div>
 
       {groups.length === 0 && (
-        <p className="mt-10 text-center text-muted">No expenses yet.</p>
+        <p className="mt-10 text-center text-muted">
+          {loading ? "Loading…" : "No expenses yet."}
+        </p>
       )}
 
       <div className="space-y-5">

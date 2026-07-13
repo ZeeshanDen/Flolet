@@ -7,7 +7,13 @@ import { useGroups } from "@/features/groups/useGroups";
 import { computeBalances, simplifyDebts } from "@/features/split/balances";
 import { formatMoney, cn } from "@/lib/utils";
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local date, not UTC — toISOString() would date a 1am IST payment yesterday.
+const today = () => format(new Date(), "yyyy-MM-dd");
+
+function safeDay(iso: string): string {
+  const d = parseISO(iso);
+  return isNaN(d.getTime()) ? "" : format(d, "d MMM");
+}
 
 export default function GroupDetailScreen() {
   const { groupId } = useParams();
@@ -15,6 +21,7 @@ export default function GroupDetailScreen() {
     group,
     expenses,
     settlements,
+    loading,
     addSettlement,
     deleteGroupExpense,
   } = useGroup(groupId);
@@ -23,6 +30,7 @@ export default function GroupDetailScreen() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSent, setInviteSent] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const memberUids = group?.memberUids ?? [];
   const balances = useMemo(
@@ -32,7 +40,20 @@ export default function GroupDetailScreen() {
   const debts = useMemo(() => simplifyDebts(balances), [balances]);
 
   if (!group) {
-    return <div className="px-4 pt-6 text-muted">Loading group…</div>;
+    return (
+      <div className="px-4 pt-6 text-center text-muted">
+        {loading ? (
+          "Loading group…"
+        ) : (
+          <>
+            <p>This group doesn't exist or you're not a member.</p>
+            <Link to="/groups" className="mt-2 inline-block text-brand-soft">
+              Back to groups
+            </Link>
+          </>
+        )}
+      </div>
+    );
   }
 
   const nameOf = (uid: string) => group.members[uid]?.displayName ?? "Someone";
@@ -48,7 +69,7 @@ export default function GroupDetailScreen() {
   return (
     <div className="px-4 pt-4">
       <div className="mb-4 flex items-center gap-2">
-        <Link to="/groups" className="text-muted">
+        <Link to="/groups" aria-label="Back to groups" className="text-muted">
           <ArrowLeft />
         </Link>
         <h1 className="text-xl font-bold">{group.name}</h1>
@@ -126,7 +147,11 @@ export default function GroupDetailScreen() {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
           />
-          <button onClick={sendInvite} className="btn-brand shrink-0 px-3">
+          <button
+            onClick={sendInvite}
+            aria-label="Send invite"
+            className="btn-brand shrink-0 px-3"
+          >
             <UserPlus size={18} />
           </button>
         </div>
@@ -151,19 +176,41 @@ export default function GroupDetailScreen() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{e.name || "Expense"}</p>
                 <p className="text-xs text-muted">
-                  {nameOf(e.paidBy)} paid · {format(parseISO(e.date), "d MMM")}
+                  {nameOf(e.paidBy)} paid · {safeDay(e.date)}
                 </p>
               </div>
               <span className="font-semibold tabular-nums">
                 {formatMoney(e.amount, group.currency)}
               </span>
-              <button
-                onClick={() => deleteGroupExpense(e.id)}
-                className="text-muted hover:text-bad"
-                aria-label="Delete"
-              >
-                <Trash2 size={16} />
-              </button>
+              {confirmDeleteId === e.id ? (
+                <span className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      deleteGroupExpense(e.id).catch((err) =>
+                        console.error("delete group expense", err),
+                      );
+                      setConfirmDeleteId(null);
+                    }}
+                    className="rounded-lg bg-bad px-2 py-1 text-xs font-semibold text-white"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="rounded-lg bg-surface px-2 py-1 text-xs font-semibold text-muted"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmDeleteId(e.id)}
+                  className="flex h-9 w-9 items-center justify-center text-muted hover:text-bad"
+                  aria-label="Delete expense"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           ))}
         </div>

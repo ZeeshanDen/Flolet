@@ -11,10 +11,10 @@ export default {
         border: "rgb(var(--border) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",
         text: "rgb(var(--text) / <alpha-value>)",
-        // Violet accent — same in both themes.
+        // Violet accent. brand-soft flips darker in light theme for contrast.
         brand: {
           DEFAULT: "#8b5cf6",
-          soft: "#a78bfa",
+          soft: "rgb(var(--brand-soft) / <alpha-value>)",
         },
         good: "#10b981",
         bad: "#f43f5e",
@@ -27,7 +27,7 @@ export default {
         "2xl": "1.25rem",
       },
       boxShadow: {
-        card: "0 8px 30px rgba(0,0,0,0.35)",
+        card: "var(--shadow-card)",
       },
     },
   },

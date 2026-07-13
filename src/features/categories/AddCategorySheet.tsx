@@ -66,7 +66,8 @@ export default function AddCategorySheet({
         </h2>
         <button
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted"
+          aria-label="Close"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-muted"
         >
           <X size={18} />
         </button>
@@ -100,8 +101,9 @@ export default function AddCategorySheet({
           <button
             key={col}
             onClick={() => setColor(col)}
+            aria-label={`Colour ${col}`}
             className={cn(
-              "h-8 w-8 rounded-full ring-1 ring-border",
+              "h-9 w-9 rounded-full ring-1 ring-border",
               col === color && "ring-4 ring-text",
             )}
             style={{ background: col }}
@@ -117,6 +119,7 @@ export default function AddCategorySheet({
             <button
               key={ic}
               onClick={() => setIcon(ic)}
+              aria-label={`Icon ${ic}`}
               className={cn(
                 "flex h-11 w-11 items-center justify-center rounded-xl border transition",
                 active ? "border-[1.5px]" : "border-transparent bg-card",

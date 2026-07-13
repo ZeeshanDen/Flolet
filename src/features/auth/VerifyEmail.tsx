@@ -45,7 +45,7 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-md flex-col justify-center px-6">
+    <div className="safe-top mx-auto flex h-full max-w-md flex-col justify-center px-6">
       <div className="mb-6 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand">
           <MailCheck size={32} className="text-white" />
