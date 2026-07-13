@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark is the default; [data-theme="light"] flips the palette. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: 10 10 11;
+  --surface: 20 20 22;
+  --card: 27 27 31;
+  --border: 42 42 48;
+  --muted: 161 161 170;
+  --text: 250 250 250;
+  --glow: 0.12;
+  --amount-start: 255 255 255;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: 249 250 251;
+  --surface: 255 255 255;
+  --card: 255 255 255;
+  --border: 228 228 231;
+  --muted: 113 113 122;
+  --text: 24 24 27;
+  --glow: 0.1;
+  --amount-start: 30 27 75;
+}
+
+html {
+  height: 100%;
+  /* Paint the base color so any overscroll/inset area never flashes white. */
+  background: rgb(var(--bg));
+}
+
+body {
+  /* Dynamic viewport height fixes the iOS standalone-PWA short-height bug. */
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden; /* only the in-app scroll regions scroll, not the document */
+}
+
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--bg));
+  /* Soft violet glow up top for depth — not a flat slab. */
+  background-image: radial-gradient(
+    120% 60% at 50% -10%,
+    rgb(139 92 246 / var(--glow)),
+    transparent 60%
+  );
+  background-attachment: fixed;
+  color: rgb(var(--text));
+  font-family: theme("fontFamily.sans");
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Bottom-sheet motion (focus mode). */
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Hide scrollbars on horizontal chip rails / sheets. */
+.noscroll::-webkit-scrollbar {
+  display: none;
+}
+.noscroll {
+  scrollbar-width: none;
+}
+
+/* Respect iOS safe areas for the installed PWA. */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-brand {
+    @apply btn bg-brand text-white hover:bg-brand-soft;
+  }
+  .btn-ghost {
+    @apply btn bg-card text-text hover:bg-border;
+  }
+  .input {
+    @apply w-full rounded-xl border border-border bg-surface px-4 py-3 text-text outline-none placeholder:text-muted focus:border-brand;
+  }
+  .card {
+    @apply rounded-2xl border border-border bg-card p-4 shadow-card;
+  }
+  /* Gradient number for the big amount display. */
+  .amount-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      135deg,
+      rgb(var(--amount-start)) 0%,
+      #8b5cf6 100%
+    );
+  }
+}
