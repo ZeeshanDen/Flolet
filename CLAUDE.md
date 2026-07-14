@@ -17,7 +17,8 @@ Expense tracker + Splitwise-style bill split PWA. React 18 + TS + Vite + Tailwin
 - Split math: `resolveSplit`/`validateSplit` in `splitCalc.ts` — 5 types (equal/exact/percent/shares/adjustment), cent-exact reconciliation. Don't touch without running tests.
 - Theming: CSS vars in `src/index.css` (dark default, `:root[data-theme="light"]`), consumed via Tailwind `rgb(var(--x))` colors. Brand violet `#8b5cf6`.
 - Overlays: `src/components/BottomSheet.tsx` portal; entry screen is "focus mode" — numpad/split/add-category all live in sheets.
-- Routing (`App.tsx`): logged-out → `/` landing + `/auth`; unverified → `VerifyEmail`; verified → tab app.
+- Routing (`App.tsx`): logged-out → `/` landing + `/auth`; unverified → `VerifyEmail`; vault `locked` → `UnlockVault`; verified+resolved → tab app.
+- E2E vault (opt-in, from Profile): `src/lib/crypto.ts` (WebCrypto only) + `src/features/vault/`. Passphrase→PBKDF2(600k)→KEK unwraps AES-256-GCM master key; `users/{uid}/vault/meta` stores salt+wrappedMK+check. Expense **notes** encrypted into `enc{iv,ct}` (amount/date/categoryId stay plaintext for queries). Old plaintext docs still render; `migrateExpenses` encrypts them in background. Recovery code = raw MK, shown once. Key cached non-extractable in IndexedDB, cleared on logout. Don't log decrypted payloads.
 
 ## Hard-won gotchas
 
