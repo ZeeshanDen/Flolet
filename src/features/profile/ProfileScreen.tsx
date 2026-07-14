@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
-import { LogOut, Check, Moon, Sun, Tags, ChevronRight } from "lucide-react";
+import {
+  LogOut,
+  Check,
+  Moon,
+  Sun,
+  Tags,
+  ChevronRight,
+  ShieldCheck,
+} from "lucide-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useProfile } from "@/features/profile/useProfile";
 import { useCategories } from "@/features/categories/useCategories";
 import ManageCategoriesSheet from "@/features/categories/ManageCategoriesSheet";
+import SetupVaultSheet from "@/features/vault/SetupVaultSheet";
+import { useVault } from "@/features/vault/vaultStore";
 import { useTheme, type Theme } from "@/lib/theme";
 import { CURRENCIES, currencySymbol, cn } from "@/lib/utils";
 
@@ -15,6 +25,8 @@ export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [saved, setSaved] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [vaultOpen, setVaultOpen] = useState(false);
+  const vaultStatus = useVault((s) => s.status);
 
   useEffect(() => {
     if (profile) setName(profile.displayName);
@@ -125,6 +137,33 @@ export default function ProfileScreen() {
         <ChevronRight size={18} className="shrink-0 text-muted" />
       </button>
 
+      <button
+        onClick={() => vaultStatus === "none" && setVaultOpen(true)}
+        className="card mb-3 flex w-full items-center gap-3 text-left"
+      >
+        <span
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+            vaultStatus === "unlocked"
+              ? "bg-good/15 text-good"
+              : "bg-brand/10 text-brand-soft",
+          )}
+        >
+          <ShieldCheck size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">End-to-end encryption</p>
+          <p className="text-sm text-muted">
+            {vaultStatus === "unlocked"
+              ? "On — notes encrypted with your key"
+              : "Off — set a passphrase to enable"}
+          </p>
+        </div>
+        {vaultStatus === "none" && (
+          <ChevronRight size={18} className="shrink-0 text-muted" />
+        )}
+      </button>
+
       <button onClick={logout} className="btn-ghost w-full text-bad">
         <LogOut size={18} />
         Sign out
@@ -134,6 +173,7 @@ export default function ProfileScreen() {
         open={manageOpen}
         onClose={() => setManageOpen(false)}
       />
+      <SetupVaultSheet open={vaultOpen} onClose={() => setVaultOpen(false)} />
     </div>
   );
 }

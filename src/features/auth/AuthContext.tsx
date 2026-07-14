@@ -115,6 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = async () => {
+    // Drop the cached vault key so the next session must unlock again.
+    const uid = auth.currentUser?.uid;
+    const { useVault } = await import("@/features/vault/vaultStore");
+    await useVault.getState().clear(uid);
     await signOut(auth);
   };
 

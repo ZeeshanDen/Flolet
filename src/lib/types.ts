@@ -12,11 +12,13 @@ export interface Expense {
   id: string;
   amount: number; // in major currency units (e.g. dollars)
   categoryId: string;
-  name?: string;
+  name?: string; // plaintext (pre-vault docs, or vault disabled)
   note?: string;
   date: string; // ISO yyyy-mm-dd
   createdAt: number; // epoch ms
   isShared: boolean;
+  /** E2E-encrypted payload ({ name }) — present when the vault is enabled. */
+  enc?: { iv: string; ct: string };
 }
 
 export interface GroupExpense {

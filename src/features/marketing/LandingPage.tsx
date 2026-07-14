@@ -46,8 +46,8 @@ const FEATURES = [
 const PRIVACY = [
   {
     icon: Lock,
-    title: "Encrypted in transit & at rest",
-    body: "Every byte moves over TLS and sleeps encrypted on Google Cloud infrastructure.",
+    title: "End-to-end encrypted notes",
+    body: "Turn on the vault and your expense notes are encrypted on-device with a key only you hold — even we can't read them. Everything else is encrypted in transit and at rest.",
   },
   {
     icon: ShieldCheck,
