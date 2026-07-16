@@ -51,6 +51,19 @@ body {
   height: 100%;
 }
 
+/* iOS auto-zooms any focused control with font-size < 16px — pin the floor
+   so tapping a textbox never zooms the page. */
+input,
+select,
+textarea {
+  font-size: max(1rem, 16px);
+}
+
+/* Kill double-tap-to-zoom (and the 300ms tap delay) app-wide. */
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   background: rgb(var(--bg));
