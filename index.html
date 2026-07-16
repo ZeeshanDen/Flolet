@@ -11,6 +11,79 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Apply the saved theme before ANY paint — kills the white launch flash. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("spendly-theme");
+          if (t !== "light" && t !== "dark")
+            t = matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+    <style>
+      /* Critical pre-CSS splash: paints instantly, replaced when React mounts. */
+      html {
+        background: #0a0a0b;
+      }
+      html[data-theme="light"] {
+        background: #f9fafb;
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #0a0a0b;
+      }
+      html[data-theme="light"] #splash {
+        background: #f9fafb;
+      }
+      #splash .mark {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: #8b5cf6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: splashPulse 1.6s ease-in-out infinite;
+      }
+      #splash .name {
+        font-family: -apple-system, system-ui, sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #fafafa;
+      }
+      html[data-theme="light"] #splash .name {
+        color: #18181b;
+      }
+      @keyframes splashPulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(0.94);
+          opacity: 0.85;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash .mark {
+          animation: none;
+        }
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,7 +93,17 @@
     <title>Flowlet — Expense & Split</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="splash">
+        <div class="mark">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+          </svg>
+        </div>
+        <div class="name">Flowlet</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

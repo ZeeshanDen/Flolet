@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Wallet } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import SignIn from "@/features/auth/SignIn";
 import VerifyEmail from "@/features/auth/VerifyEmail";
@@ -14,10 +15,18 @@ import GroupsScreen from "@/features/groups/GroupsScreen";
 import GroupDetailScreen from "@/features/groups/GroupDetailScreen";
 import ProfileScreen from "@/features/profile/ProfileScreen";
 
+// Mirrors the static #splash in index.html so launch feels like one screen.
 function Splash() {
   return (
-    <div className="flex h-full items-center justify-center text-muted">
-      Loading…
+    <div
+      className="flex h-full flex-col items-center justify-center gap-3.5"
+      role="status"
+      aria-label="Loading"
+    >
+      <div className="flex h-[72px] w-[72px] animate-[splashPulse_1.6s_ease-in-out_infinite] items-center justify-center rounded-[20px] bg-brand">
+        <Wallet size={40} className="text-white" />
+      </div>
+      <div className="text-xl font-bold tracking-tight">Flowlet</div>
     </div>
   );
 }
