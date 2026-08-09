@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Trash2, Check, Plus } from "lucide-react";
 import BottomSheet from "@/components/BottomSheet";
 import { useMedicines } from "@/features/meds/useMedicines";
+import { usePersons } from "@/features/meds/usePersons";
 import { remainingUnits, todayIso, WEEKDAYS } from "@/features/meds/medsCalc";
 import { cn } from "@/lib/utils";
 import type { Medicine, MedSlot } from "@/lib/types";
@@ -29,8 +30,12 @@ export default function MedicineSheet({
   medicine?: Medicine | null;
 }) {
   const { addMedicine, updateMedicine, deleteMedicine } = useMedicines();
+  const { persons, addPerson } = usePersons();
   const editing = !!medicine;
 
+  const [personId, setPersonId] = useState<string | null>(null);
+  const [addingPerson, setAddingPerson] = useState(false);
+  const [newPersonName, setNewPersonName] = useState("");
   const [name, setName] = useState("");
   const [unit, setUnit] = useState(UNITS[0]);
   const [schedType, setSchedType] = useState<"daily" | "weekly">("daily");
@@ -49,7 +54,10 @@ export default function MedicineSheet({
     setError(null);
     setConfirmDelete(false);
     setRefill("");
+    setAddingPerson(false);
+    setNewPersonName("");
     if (medicine) {
+      setPersonId(medicine.personId ?? null);
       setName(medicine.name);
       setUnit(medicine.unit);
       setUnitsPerDose(String(medicine.unitsPerDose));
@@ -63,6 +71,7 @@ export default function MedicineSheet({
         setWeekday(medicine.schedule.weekday);
       }
     } else {
+      setPersonId(persons[0]?.id ?? null);
       setName("");
       setUnit(UNITS[0]);
       setSchedType("daily");
@@ -102,6 +111,7 @@ export default function MedicineSheet({
       schedule,
       stock: numStock,
       stockAsOf: todayIso(),
+      ...(personId ? { personId } : {}),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
     };
     try {
@@ -191,6 +201,55 @@ export default function MedicineSheet({
               <Plus size={16} />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Who takes it */}
+      <div className="mb-2 text-xs font-semibold text-muted">For</div>
+      {addingPerson ? (
+        <div className="mb-3 flex gap-2">
+          <input
+            className="input flex-1"
+            placeholder="Name (e.g. Mom)"
+            value={newPersonName}
+            onChange={(e) => setNewPersonName(e.target.value)}
+            autoFocus
+          />
+          <button
+            onClick={async () => {
+              const id = await addPerson(newPersonName);
+              if (id) setPersonId(id);
+              setAddingPerson(false);
+              setNewPersonName("");
+            }}
+            disabled={!newPersonName.trim()}
+            className="btn-brand shrink-0 px-4 disabled:bg-border disabled:text-muted"
+          >
+            Add
+          </button>
+        </div>
+      ) : (
+        <div className="noscroll mb-3 flex gap-2 overflow-x-auto pb-1">
+          {persons.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPersonId(p.id)}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
+                personId === p.id
+                  ? "bg-brand text-white"
+                  : "border border-border bg-surface text-muted",
+              )}
+            >
+              {p.name}
+            </button>
+          ))}
+          <button
+            onClick={() => setAddingPerson(true)}
+            className="shrink-0 rounded-full border-[1.5px] border-dashed border-brand-soft px-4 py-2 text-sm font-semibold text-brand-soft"
+          >
+            + Person
+          </button>
         </div>
       )}
 

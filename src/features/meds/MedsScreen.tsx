@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Plus, Pill, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useMedicines } from "@/features/meds/useMedicines";
+import { usePersons } from "@/features/meds/usePersons";
 import {
   remainingUnits,
   runOutDate,
@@ -21,9 +22,11 @@ function statusColor(days: number) {
 
 function MedCard({
   med,
+  personName,
   onTap,
 }: {
   med: Medicine;
+  personName?: string;
   onTap: (m: Medicine) => void;
 }) {
   const remaining = remainingUnits(med);
@@ -49,7 +52,10 @@ function MedCard({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{med.name}</p>
-          <p className="text-xs text-muted">{scheduleLabel(med)}</p>
+          <p className="truncate text-xs text-muted">
+            {personName ? `${personName} · ` : ""}
+            {scheduleLabel(med)}
+          </p>
         </div>
         <div className="shrink-0 text-right">
           <span
@@ -80,15 +86,27 @@ function MedCard({
 
 export default function MedsScreen() {
   const { medicines, loading } = useMedicines();
+  const { persons } = usePersons();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Medicine | null>(null);
+  const [filter, setFilter] = useState<string | null>(null); // personId or null = all
 
-  const sorted = useMemo(
-    () => [...medicines].sort((a, b) => daysLeft(a) - daysLeft(b)),
-    [medicines],
+  const personById = useMemo(
+    () => Object.fromEntries(persons.map((p) => [p.id, p.name])),
+    [persons],
   );
+
+  const sorted = useMemo(() => {
+    const list = filter
+      ? medicines.filter((m) => m.personId === filter)
+      : medicines;
+    return [...list].sort((a, b) => daysLeft(a) - daysLeft(b));
+  }, [medicines, filter]);
   const refillSoon = sorted.filter((m) => daysLeft(m) <= 14);
   const healthy = sorted.filter((m) => daysLeft(m) > 14);
+  // Show the person on cards only in the combined view.
+  const nameFor = (m: Medicine) =>
+    !filter && m.personId ? personById[m.personId] : undefined;
 
   const openAdd = () => {
     setEditing(null);
@@ -109,6 +127,36 @@ export default function MedsScreen() {
         </button>
       </div>
 
+      {persons.length > 0 && (
+        <div className="noscroll mb-4 flex gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setFilter(null)}
+            className={cn(
+              "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
+              filter === null
+                ? "bg-brand text-white"
+                : "border border-border bg-surface text-muted",
+            )}
+          >
+            Everyone
+          </button>
+          {persons.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setFilter(p.id)}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
+                filter === p.id
+                  ? "bg-brand text-white"
+                  : "border border-border bg-surface text-muted",
+              )}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <p className="mt-10 text-center text-muted">Loading…</p>
       ) : medicines.length === 0 ? (
@@ -122,6 +170,10 @@ export default function MedsScreen() {
             it's about to run out.
           </p>
         </div>
+      ) : sorted.length === 0 ? (
+        <p className="mt-10 text-center text-muted">
+          No medicines for this person yet.
+        </p>
       ) : (
         <div className="space-y-5">
           {refillSoon.length > 0 && (
@@ -132,7 +184,12 @@ export default function MedsScreen() {
               </p>
               <div className="space-y-2">
                 {refillSoon.map((m) => (
-                  <MedCard key={m.id} med={m} onTap={openEdit} />
+                  <MedCard
+                    key={m.id}
+                    med={m}
+                    personName={nameFor(m)}
+                    onTap={openEdit}
+                  />
                 ))}
               </div>
             </div>
@@ -144,7 +201,12 @@ export default function MedsScreen() {
               )}
               <div className="space-y-2">
                 {healthy.map((m) => (
-                  <MedCard key={m.id} med={m} onTap={openEdit} />
+                  <MedCard
+                    key={m.id}
+                    med={m}
+                    personName={nameFor(m)}
+                    onTap={openEdit}
+                  />
                 ))}
               </div>
             </div>

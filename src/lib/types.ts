@@ -8,6 +8,13 @@ export interface Category {
   order: number;
 }
 
+/** A person medicines belong to (family member) — local profile, no account. */
+export interface MedPerson {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
 export type MedSlot = "morning" | "afternoon" | "evening" | "night";
 
 export type MedSchedule =
@@ -24,6 +31,7 @@ export interface Medicine {
   schedule: MedSchedule;
   stock: number; // units on hand as of stockAsOf
   stockAsOf: string; // ISO yyyy-mm-dd, local date
+  personId?: string; // MedPerson id; absent = unassigned
   notes?: string;
   createdAt: number;
 }
