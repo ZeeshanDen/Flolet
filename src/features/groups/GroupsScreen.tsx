@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Users, Mail, Check } from "lucide-react";
+import { Plus, Users, Mail, Check, ArrowLeft } from "lucide-react";
 import { useGroups } from "@/features/groups/useGroups";
 import { CURRENCIES, currencySymbol } from "@/lib/utils";
 
@@ -35,7 +35,12 @@ export default function GroupsScreen() {
   return (
     <div className="px-4 pt-4">
       <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Groups</h1>
+        <div className="flex items-center gap-2">
+          <Link to="/profile" aria-label="Back to profile" className="text-muted">
+            <ArrowLeft />
+          </Link>
+          <h1 className="text-xl font-bold">Groups</h1>
+        </div>
         <button
           onClick={() => setCreating((v) => !v)}
           className="btn-brand px-3 py-2"

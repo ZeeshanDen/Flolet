@@ -5,10 +5,13 @@ import {
   Moon,
   Sun,
   Tags,
+  Users,
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
+import { useGroups } from "@/features/groups/useGroups";
 import { useProfile } from "@/features/profile/useProfile";
 import { useCategories } from "@/features/categories/useCategories";
 import ManageCategoriesSheet from "@/features/categories/ManageCategoriesSheet";
@@ -27,6 +30,7 @@ export default function ProfileScreen() {
   const [manageOpen, setManageOpen] = useState(false);
   const [vaultOpen, setVaultOpen] = useState(false);
   const vaultStatus = useVault((s) => s.status);
+  const { groups } = useGroups();
 
   useEffect(() => {
     if (profile) setName(profile.displayName);
@@ -119,6 +123,21 @@ export default function ProfileScreen() {
           </div>
         </div>
       </div>
+
+      <Link to="/groups" className="card mb-3 flex w-full items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand-soft">
+          <Users size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">Groups & splits</p>
+          <p className="text-sm text-muted">
+            {groups.length === 0
+              ? "Create a group, invite people, settle up"
+              : `${groups.length} group${groups.length === 1 ? "" : "s"} · balances & invites`}
+          </p>
+        </div>
+        <ChevronRight size={18} className="shrink-0 text-muted" />
+      </Link>
 
       <button
         onClick={() => setManageOpen(true)}

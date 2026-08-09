@@ -8,6 +8,26 @@ export interface Category {
   order: number;
 }
 
+export type MedSlot = "morning" | "afternoon" | "evening" | "night";
+
+export type MedSchedule =
+  | { type: "daily"; slots: MedSlot[] } // 3×/day = 3 slots; night-only = ["night"]
+  | { type: "weekly"; weekday: number }; // 0 (Sun) – 6 (Sat)
+
+export interface Medicine {
+  id: string;
+  name: string; // plaintext when the vault is off
+  /** E2E payload ({ name, notes }) — present when the vault is enabled. */
+  enc?: { iv: string; ct: string };
+  unit: string; // "tablet" | "ml" | "injection" | "sachet" | "drop"
+  unitsPerDose: number; // units consumed per intake, > 0
+  schedule: MedSchedule;
+  stock: number; // units on hand as of stockAsOf
+  stockAsOf: string; // ISO yyyy-mm-dd, local date
+  notes?: string;
+  createdAt: number;
+}
+
 export interface Expense {
   id: string;
   amount: number; // in major currency units (e.g. dollars)

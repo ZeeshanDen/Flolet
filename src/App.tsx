@@ -12,6 +12,7 @@ import EntryScreen from "@/features/expenses/EntryScreen";
 import HistoryScreen from "@/features/expenses/HistoryScreen";
 import InsightsScreen from "@/features/insights/InsightsScreen";
 import GroupsScreen from "@/features/groups/GroupsScreen";
+import MedsScreen from "@/features/meds/MedsScreen";
 import GroupDetailScreen from "@/features/groups/GroupDetailScreen";
 import ProfileScreen from "@/features/profile/ProfileScreen";
 
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/" element={<EntryScreen />} />
         <Route path="/history" element={<HistoryScreen />} />
         <Route path="/insights" element={<InsightsScreen />} />
+        <Route path="/meds" element={<MedsScreen />} />
         <Route path="/groups" element={<GroupsScreen />} />
         <Route path="/groups/:groupId" element={<GroupDetailScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />

@@ -1,12 +1,12 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Plus, ListOrdered, PieChart, Users, User } from "lucide-react";
+import { Plus, ListOrdered, PieChart, Pill, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/", label: "Add", icon: Plus, end: true },
   { to: "/history", label: "History", icon: ListOrdered, end: false },
   { to: "/insights", label: "Insights", icon: PieChart, end: false },
-  { to: "/groups", label: "Groups", icon: Users, end: false },
+  { to: "/meds", label: "Meds", icon: Pill, end: false },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];
 
