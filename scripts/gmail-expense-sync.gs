@@ -111,17 +111,47 @@ function backfillSince() {
   runSync("after:2026/08/01"); // edit the date, then Run ▶
 }
 
+/**
+ * Diagnostic — run this when a sync finds nothing. Logs how many threads
+ * each candidate query matches so you can see where the emails actually are.
+ */
+function debugSearch() {
+  [
+    'newer_than:31d subject:"transaction alert"',
+    'newer_than:31d subject:"transaction alert" -label:' + LABEL_NAME,
+    "newer_than:31d from:aubank",
+    'in:anywhere newer_than:31d subject:"transaction alert"',
+    "newer_than:31d AU Bank Credit Card",
+    "label:" + LABEL_NAME,
+  ].forEach(function (q) {
+    Logger.log('"' + q + '" → ' + GmailApp.search(q, 0, 100).length + " thread(s)");
+  });
+}
+
+/** Un-label everything so the next sync reprocesses from scratch. */
+function resetSyncedLabel() {
+  var label = GmailApp.getUserLabelByName(LABEL_NAME);
+  if (!label) return Logger.log("No label to reset.");
+  var threads = GmailApp.search("label:" + LABEL_NAME, 0, 500);
+  threads.forEach(function (t) {
+    t.removeLabel(label);
+  });
+  Logger.log("Removed label from " + threads.length + " thread(s).");
+}
+
 function runSync(windowQuery) {
   if (FLOWLET_UID.indexOf("PASTE_") === 0)
     throw new Error("Set FLOWLET_UID in the CONFIG block first.");
   var label = getLabel();
   var query =
     windowQuery + ' subject:"transaction alert" -label:' + LABEL_NAME;
+  Logger.log("Query: " + query);
 
   var synced = 0;
   // Page through in chunks of 50 threads until the search is exhausted.
   for (;;) {
     var threads = GmailApp.search(query, 0, 50);
+    Logger.log("Matched " + threads.length + " thread(s) this page.");
     if (threads.length === 0) break;
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
