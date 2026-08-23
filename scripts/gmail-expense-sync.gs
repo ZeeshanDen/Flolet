@@ -16,6 +16,10 @@ var FIREBASE_PROJECT_ID = "flowlet-dev";
 var FLOWLET_UID = "PASTE_YOUR_FIREBASE_UID_HERE"; // Profile → User ID → copy
 var LABEL_NAME = "Flowlet/Synced";
 var SEARCH_WINDOW = "newer_than:2d"; // how far back each run looks
+// Subject shapes across banks: AU/SBI/ICICI say "transaction alert";
+// Axis says "INR ... spent on credit card no. XXNNNN".
+var SUBJECT_QUERY =
+  'subject:("transaction alert" OR "spent on credit card")';
 // ────────────────────────────────────────────────────────────────────────
 
 // Map merchant keywords → category NAMES exactly as they appear in your
@@ -33,7 +37,7 @@ var CATEGORY_RULES = [
   { re: /AMAZON|FLIPKART|MYNTRA|AJIO|NYKAA|CROMA|MEESHO/i, cat: "Shopping" },
   { re: /ELECTRICITY|BSES|AIRTEL|JIO|VI |VODAFONE|BROADBAND|DTH|BILLDESK|RECHARGE/i, cat: "Bills" },
   { re: /RENT|NOBROKER/i, cat: "Rent" },
-  { re: /BOOKMYSHOW|NETFLIX|SPOTIFY|PRIME|HOTSTAR|PVR|INOX/i, cat: "Fun" },
+  { re: /BOOK ?MY ?SHO|NETFLIX|SPOTIFY|PRIME|HOTSTAR|PVR|INOX/i, cat: "Fun" },
   { re: /MAKEMYTRIP|GOIBIBO|OYO|AIRBNB|INDIGO|AIRASIA|VISTARA|CLEARTRIP/i, cat: "Travel" },
 ];
 var FALLBACK_CATEGORY_NAME = "Other";
@@ -106,14 +110,71 @@ var PARSERS = [
       return null;
     },
   },
+  {
+    // Axis Bank credit card (tabular email):
+    // "Transaction Amount: INR 2710 Merchant Name: BLINKIT
+    //  Axis Bank Credit Card No. XX1968 Date & Time: 08-08-2026, 14:16:16 IST"
+    name: "Axis CC",
+    match: /Axis Bank Credit Card/i,
+    parse: function (body) {
+      var m = body.match(
+        /Transaction Amount:\s*INR\s*([\d,]+(?:\.\d+)?)\s*Merchant Name:\s*(.+?)\s*Axis Bank Credit Card No\.?\s*(\S+)\s*Date\s*&\s*Time:\s*(\d{2}-\d{2}-\d{4})/i,
+      );
+      if (!m || !m[1] || !m[4]) return null;
+      return {
+        amount: parseFloat(m[1].replace(/,/g, "")),
+        merchant: cleanMerchant(m[2]),
+        date: ddmmyyyyToIso(m[4]),
+        card: m[3] || "",
+      };
+    },
+  },
+  {
+    // ICICI debit card:
+    // "A purchase of Rs. 355.46 has been made using your Debit Card linked to
+    //  ICICI Bank Account XX980 on 26-Jul-26. Info: VIN*BOOK MY SHO."
+    // ICICI credit card:
+    // "Your ICICI Bank Credit Card XX7000 has been used for a transaction of
+    //  INR 294.10 on Jul 18, 2026 at 10:14:31. Info: AMAZON PAY IN E COMMERCE."
+    name: "ICICI",
+    match: /ICICI Bank/i,
+    parse: function (body) {
+      var d = body.match(
+        /purchase of Rs\.?\s*([\d,]+(?:\.\d+)?)\s*has been made using your Debit Card[\s\S]*?on\s*(\d{1,2}-[A-Za-z]{3}-\d{2,4})[.\s]*Info:\s*([^.]+)/i,
+      );
+      if (d && d[1] && d[2]) {
+        return {
+          amount: parseFloat(d[1].replace(/,/g, "")),
+          merchant: cleanMerchant(d[3]),
+          date: monthNameToIso(d[2]),
+          card: "",
+        };
+      }
+      var c = body.match(
+        /Credit Card\s*(\S+)\s*has been used for a transaction of INR\s*([\d,]+(?:\.\d+)?)\s*on\s*([A-Za-z]{3,9}\s+\d{1,2},\s*\d{4})[\s\S]*?Info:\s*([^.]+)/i,
+      );
+      if (c && c[2] && c[3]) {
+        return {
+          amount: parseFloat(c[2].replace(/,/g, "")),
+          merchant: cleanMerchant(c[4]),
+          date: monthNameToIso(c[3]),
+          card: c[1] || "",
+        };
+      }
+      return null;
+    },
+  },
   // Add more banks here:
   // { name: "HDFC", match: /HDFC Bank/i, parse: function (body) { ... } },
 ];
 
 function cleanMerchant(raw) {
-  // "UPI/ZEPTONOW" → "Zeptonow". Defensive: never assume the group matched.
+  // "UPI/ZEPTONOW" → "Zeptonow"; "VIN*BOOK MY SHO" → "Book my sho".
+  // Defensive: never assume the group matched.
   if (!raw || typeof raw !== "string") return "Card spend";
-  var s = raw.replace(/^UPI\//i, "").replace(/[_*]/g, " ").trim();
+  var s = raw.replace(/^UPI\//i, "").trim();
+  if (s.indexOf("*") >= 0) s = s.slice(s.indexOf("*") + 1); // drop processor prefix
+  s = s.replace(/[_*]/g, " ").replace(/\s+/g, " ").trim();
   if (!s) return "Card spend";
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
@@ -123,6 +184,30 @@ function ddmmyyyyToIso(d) {
   if (p.length !== 3) return "";
   var year = p[2].length === 2 ? "20" + p[2] : p[2]; // "26" → "2026"
   return year + "-" + p[1] + "-" + p[0];
+}
+
+var MONTHS = {
+  jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+  jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+};
+
+/** "26-Jul-26" or "Jul 18, 2026" → "yyyy-mm-dd". */
+function monthNameToIso(d) {
+  var s = String(d || "").trim();
+  var m1 = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+  if (m1) {
+    var mon = MONTHS[m1[2].toLowerCase()];
+    if (!mon) return "";
+    var y = m1[3].length === 2 ? "20" + m1[3] : m1[3];
+    return y + "-" + mon + "-" + ("0" + m1[1]).slice(-2);
+  }
+  var m2 = s.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),\s*(\d{4})$/);
+  if (m2) {
+    var mon2 = MONTHS[m2[1].slice(0, 3).toLowerCase()];
+    if (!mon2) return "";
+    return m2[3] + "-" + mon2 + "-" + ("0" + m2[2]).slice(-2);
+  }
+  return "";
 }
 
 function getLabel() {
@@ -161,10 +246,10 @@ function backfillSince() {
  */
 function debugSearch() {
   [
-    'newer_than:31d subject:"transaction alert"',
-    'newer_than:31d subject:"transaction alert" -label:' + LABEL_NAME,
+    "newer_than:31d " + SUBJECT_QUERY,
+    "newer_than:31d " + SUBJECT_QUERY + " -label:" + LABEL_NAME,
     "newer_than:31d from:aubank",
-    'in:anywhere newer_than:31d subject:"transaction alert"',
+    "in:anywhere newer_than:31d " + SUBJECT_QUERY,
     "newer_than:31d AU Bank Credit Card",
     "label:" + LABEL_NAME,
   ].forEach(function (q) {
@@ -186,7 +271,7 @@ function recategorize() {
   if (FLOWLET_UID.indexOf("PASTE_") === 0)
     throw new Error("Set FLOWLET_UID in the CONFIG block first.");
   var query =
-    RECAT_WINDOW + ' subject:"transaction alert" label:' + LABEL_NAME;
+    RECAT_WINDOW + " " + SUBJECT_QUERY + " label:" + LABEL_NAME;
   var changed = 0;
   // Page through the whole labeled history, 100 threads at a time.
   var threads = [];
@@ -251,7 +336,7 @@ function runSync(windowQuery) {
     throw new Error("Set FLOWLET_UID in the CONFIG block first.");
   var label = getLabel();
   var query =
-    windowQuery + ' subject:"transaction alert" -label:' + LABEL_NAME;
+    windowQuery + " " + SUBJECT_QUERY + " -label:" + LABEL_NAME;
   Logger.log("Query: " + query);
 
   var synced = 0;
