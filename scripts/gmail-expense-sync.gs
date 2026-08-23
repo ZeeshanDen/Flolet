@@ -179,12 +179,23 @@ function debugSearch() {
  * Patches ONLY categoryId — names/amounts/dates stay untouched.
  * Run after editing rules. Skips docs you've deleted in the app.
  */
+// How far back recategorize() looks. Widen if you've synced older history.
+var RECAT_WINDOW = "newer_than:1y";
+
 function recategorize() {
   if (FLOWLET_UID.indexOf("PASTE_") === 0)
     throw new Error("Set FLOWLET_UID in the CONFIG block first.");
-  var query = 'newer_than:62d subject:"transaction alert" label:' + LABEL_NAME;
-  var threads = GmailApp.search(query, 0, 500);
+  var query =
+    RECAT_WINDOW + ' subject:"transaction alert" label:' + LABEL_NAME;
   var changed = 0;
+  // Page through the whole labeled history, 100 threads at a time.
+  var threads = [];
+  for (var start = 0; ; start += 100) {
+    var page = GmailApp.search(query, start, 100);
+    threads = threads.concat(page);
+    if (page.length < 100) break;
+  }
+  Logger.log("Scanning " + threads.length + " thread(s).");
   threads.forEach(function (thread) {
     thread.getMessages().forEach(function (msg) {
       var subject = msg.getSubject() || "";
