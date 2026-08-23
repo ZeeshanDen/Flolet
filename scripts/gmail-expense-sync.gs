@@ -40,16 +40,31 @@ var PARSERS = [
     name: "AU Bank CC",
     match: /AU Bank Credit Card Transaction Alert/i, // subject
     parse: function (body) {
+      // Primary: "INR 110.00 were spent on your ... xx4693 at UPI/ZEPTONOW on 16-08-2026"
       var m = body.match(
         /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)\s*at\s*(.+?)\s*on\s*(\d{2}-\d{2}-\d{4})/i,
       );
-      if (!m) return null;
-      return {
-        amount: parseFloat(m[1].replace(/,/g, "")),
-        merchant: cleanMerchant(m[3]),
-        date: ddmmyyyyToIso(m[4]),
-        card: m[2],
-      };
+      if (m && m[1] && m[4]) {
+        return {
+          amount: parseFloat(m[1].replace(/,/g, "")),
+          merchant: cleanMerchant(m[3]),
+          date: ddmmyyyyToIso(m[4]),
+          card: m[2] || "",
+        };
+      }
+      // Fallback: variants without an "at MERCHANT" segment (ATM/POS etc.)
+      var f = body.match(
+        /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)[\s\S]*?on\s*(\d{2}-\d{2}-\d{4})/i,
+      );
+      if (f && f[1] && f[3]) {
+        return {
+          amount: parseFloat(f[1].replace(/,/g, "")),
+          merchant: "Card spend",
+          date: ddmmyyyyToIso(f[3]),
+          card: f[2] || "",
+        };
+      }
+      return null;
     },
   },
   // Add more banks here:
@@ -57,13 +72,16 @@ var PARSERS = [
 ];
 
 function cleanMerchant(raw) {
-  // "UPI/ZEPTONOW" → "Zeptonow"
+  // "UPI/ZEPTONOW" → "Zeptonow". Defensive: never assume the group matched.
+  if (!raw || typeof raw !== "string") return "Card spend";
   var s = raw.replace(/^UPI\//i, "").replace(/[_*]/g, " ").trim();
+  if (!s) return "Card spend";
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
 function ddmmyyyyToIso(d) {
-  var p = d.split("-");
+  var p = String(d || "").split("-");
+  if (p.length !== 3) return "";
   return p[2] + "-" + p[1] + "-" + p[0];
 }
 
@@ -113,7 +131,7 @@ function runSync(windowQuery) {
           var p = PARSERS[i];
           if (!p.match.test(subject) && !p.match.test(body)) continue;
           var tx = p.parse(body);
-          if (!tx || !(tx.amount > 0)) continue;
+          if (!tx || !(tx.amount > 0) || !tx.date) continue;
           writeExpense(msg.getId(), tx);
           synced++;
           break;
