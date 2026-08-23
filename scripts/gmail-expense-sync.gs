@@ -144,9 +144,13 @@ function backfillMonth() {
   runSync("newer_than:31d");
 }
 
-/** Backfill a custom range instead, e.g. since a date: */
+/**
+ * Backfill a custom range. Edit the dates, then Run ▶.
+ * "after:" is inclusive, "before:" exclusive — the example below is July.
+ * Omit "before:" to mean "until now".
+ */
 function backfillSince() {
-  runSync("after:2026/08/01"); // edit the date, then Run ▶
+  runSync("after:2026/07/01 before:2026/08/01");
 }
 
 /**
