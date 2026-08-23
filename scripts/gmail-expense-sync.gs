@@ -23,10 +23,12 @@ var SEARCH_WINDOW = "newer_than:2d"; // how far back each run looks
 // categories each run and resolves names to ids, so custom categories work.
 // First matching rule wins — put specific merchants before generic keywords.
 var CATEGORY_RULES = [
-  { re: /JANWA/i, cat: "Mom Health" }, // specific merchant → mom's category
-  { re: /MEDICAL|PHARM|APOLLO|MEDPLUS|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health" },
-  { re: /ZEPTO|SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "Food" },
-  { re: /BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "Groceries" },
+  // Anything "medic/medico/medical" defaults to Mom Health (recategorize to
+  // Health by hand when it's not hers).
+  { re: /JANWA|MEDIC/i, cat: "Mom Health" },
+  { re: /PHARM|APOLLO|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health" },
+  { re: /SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "Food" },
+  { re: /ZEPTO|BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "Groceries" },
   { re: /UBER|OLA|RAPIDO|IRCTC|REDBUS|METRO|FUEL|PETROL|HPCL|IOCL|BPCL/i, cat: "Transport" },
   { re: /AMAZON|FLIPKART|MYNTRA|AJIO|NYKAA|CROMA|MEESHO/i, cat: "Shopping" },
   { re: /ELECTRICITY|BSES|AIRTEL|JIO|VI |VODAFONE|BROADBAND|DTH|BILLDESK|RECHARGE/i, cat: "Bills" },
@@ -168,6 +170,58 @@ function debugSearch() {
   ].forEach(function (q) {
     Logger.log('"' + q + '" → ' + GmailApp.search(q, 0, 100).length + " thread(s)");
   });
+}
+
+/**
+ * Re-apply the current CATEGORY_RULES to already-synced expenses by
+ * re-reading the source emails (merchant names in Firestore may be
+ * vault-encrypted; the emails are the readable source of truth).
+ * Patches ONLY categoryId — names/amounts/dates stay untouched.
+ * Run after editing rules. Skips docs you've deleted in the app.
+ */
+function recategorize() {
+  if (FLOWLET_UID.indexOf("PASTE_") === 0)
+    throw new Error("Set FLOWLET_UID in the CONFIG block first.");
+  var query = 'newer_than:62d subject:"transaction alert" label:' + LABEL_NAME;
+  var threads = GmailApp.search(query, 0, 500);
+  var changed = 0;
+  threads.forEach(function (thread) {
+    thread.getMessages().forEach(function (msg) {
+      var subject = msg.getSubject() || "";
+      var body = (msg.getPlainBody() || "").replace(/\s+/g, " ");
+      for (var i = 0; i < PARSERS.length; i++) {
+        var p = PARSERS[i];
+        if (!p.match.test(subject) && !p.match.test(body)) continue;
+        var tx = p.parse(body);
+        if (!tx || !(tx.amount > 0) || !tx.date) continue;
+        var catId = categoryFor(tx.merchant);
+        var url =
+          "https://firestore.googleapis.com/v1/projects/" +
+          FIREBASE_PROJECT_ID +
+          "/databases/(default)/documents/users/" +
+          FLOWLET_UID +
+          "/expenses/gmail-" +
+          msg.getId() +
+          "?updateMask.fieldPaths=categoryId&currentDocument.exists=true";
+        var res = UrlFetchApp.fetch(url, {
+          method: "patch",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            fields: { categoryId: { stringValue: catId } },
+          }),
+          headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() },
+          muteHttpExceptions: true,
+        });
+        if (res.getResponseCode() < 300) {
+          changed++;
+          Logger.log(tx.date + " ₹" + tx.amount + " " + tx.merchant + " → " + catId);
+        }
+        // 404/409 = doc was deleted in the app (e.g. a removed duplicate) — skip.
+        break;
+      }
+    });
+  });
+  Logger.log("Recategorized " + changed + " expense(s).");
 }
 
 /** Un-label everything so the next sync reprocesses from scratch. */
