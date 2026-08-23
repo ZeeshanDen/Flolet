@@ -1,13 +1,21 @@
 import { useMemo, useState } from "react";
-import { Search, Pencil } from "lucide-react";
-import { format, parseISO, isToday, isYesterday } from "date-fns";
+import { Search, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  format,
+  parseISO,
+  isToday,
+  isYesterday,
+  addMonths,
+} from "date-fns";
 import { useExpenses } from "@/features/expenses/useExpenses";
 import { useCategories } from "@/features/categories/useCategories";
 import { useProfile } from "@/features/profile/useProfile";
 import { CategoryIcon } from "@/features/categories/icons";
 import EditExpenseSheet from "@/features/expenses/EditExpenseSheet";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, cn } from "@/lib/utils";
 import type { Expense } from "@/lib/types";
+
+type PeriodMode = "all" | "month" | "custom";
 
 function dayLabel(iso: string) {
   const d = parseISO(iso);
@@ -23,6 +31,10 @@ export default function HistoryScreen() {
   const { currency } = useProfile();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [mode, setMode] = useState<PeriodMode>("all");
+  const [monthCursor, setMonthCursor] = useState(new Date());
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   const catById = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
@@ -31,15 +43,26 @@ export default function HistoryScreen() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return expenses;
+    const monthPrefix = format(monthCursor, "yyyy-MM");
     return expenses.filter((e) => {
+      if (mode === "month" && !e.date.startsWith(monthPrefix)) return false;
+      if (mode === "custom") {
+        if (from && e.date < from) return false;
+        if (to && e.date > to) return false;
+      }
+      if (!needle) return true;
       const cat = catById[e.categoryId];
       return (
         e.name?.toLowerCase().includes(needle) ||
         cat?.name.toLowerCase().includes(needle)
       );
     });
-  }, [expenses, q, catById]);
+  }, [expenses, q, catById, mode, monthCursor, from, to]);
+
+  const periodTotal = useMemo(
+    () => filtered.reduce((s, e) => s + e.amount, 0),
+    [filtered],
+  );
 
   const groups = useMemo(() => {
     const map = new Map<string, Expense[]>();
@@ -68,9 +91,86 @@ export default function HistoryScreen() {
         />
       </div>
 
+      {/* Period filter */}
+      <div className="mb-3 flex gap-2 rounded-xl bg-surface p-1">
+        {(
+          [
+            { key: "all", label: "All" },
+            { key: "month", label: "Month" },
+            { key: "custom", label: "Custom" },
+          ] as { key: PeriodMode; label: string }[]
+        ).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setMode(t.key)}
+            className={cn(
+              "flex-1 rounded-lg py-2 text-sm font-medium transition",
+              mode === t.key ? "bg-brand text-white" : "text-muted",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "month" && (
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-border bg-surface px-2 py-1.5">
+          <button
+            onClick={() => setMonthCursor((c) => addMonths(c, -1))}
+            aria-label="Previous month"
+            className="flex h-9 w-9 items-center justify-center text-muted"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="font-semibold">{format(monthCursor, "MMMM yyyy")}</span>
+          <button
+            onClick={() => setMonthCursor((c) => addMonths(c, 1))}
+            aria-label="Next month"
+            className="flex h-9 w-9 items-center justify-center text-muted"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+
+      {mode === "custom" && (
+        <div className="mb-3 flex items-center gap-2">
+          <input
+            type="date"
+            className="input flex-1"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            aria-label="From date"
+          />
+          <span className="text-sm text-muted">to</span>
+          <input
+            type="date"
+            className="input flex-1"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            aria-label="To date"
+          />
+        </div>
+      )}
+
+      {mode !== "all" && filtered.length > 0 && (
+        <div className="mb-3 flex items-center justify-between rounded-xl bg-brand/10 px-3.5 py-2.5 text-sm">
+          <span className="text-muted">
+            {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
+          </span>
+          <span className="font-bold text-brand-soft">
+            {formatMoney(periodTotal, currency)}
+          </span>
+        </div>
+      )}
+
       {groups.length === 0 && (
         <p className="mt-10 text-center text-muted">
-          {loading ? "Loading…" : "No expenses yet."}
+          {loading
+            ? "Loading…"
+            : mode === "all"
+              ? "No expenses yet."
+              : "No expenses in this period."}
         </p>
       )}
 
