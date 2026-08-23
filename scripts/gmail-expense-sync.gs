@@ -24,7 +24,7 @@ var SEARCH_WINDOW = "newer_than:2d"; // how far back each run looks
 // First matching rule wins — put specific merchants before generic keywords.
 var CATEGORY_RULES = [
   { re: /JANWA/i, cat: "Mom Health" }, // specific merchant → mom's category
-  { re: /MEDICAL|PHARM|APOLLO|MEDPLUS|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health Expenses" },
+  { re: /MEDICAL|PHARM|APOLLO|MEDPLUS|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health" },
   { re: /ZEPTO|SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "Food" },
   { re: /BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "Groceries" },
   { re: /UBER|OLA|RAPIDO|IRCTC|REDBUS|METRO|FUEL|PETROL|HPCL|IOCL|BPCL/i, cat: "Transport" },
@@ -263,8 +263,76 @@ function categoryFor(merchant) {
   return map[FALLBACK_CATEGORY_NAME.toLowerCase()] || FALLBACK_CATEGORY_ID;
 }
 
+/**
+ * True when a MANUALLY-entered expense with the same date + amount already
+ * exists — the user logged this transaction themselves, so importing it
+ * would create a duplicate. Two gmail-sourced docs never block each other
+ * (two real same-amount transactions arrive as two distinct emails).
+ */
+function hasManualDuplicate(tx) {
+  var url =
+    "https://firestore.googleapis.com/v1/projects/" +
+    FIREBASE_PROJECT_ID +
+    "/databases/(default)/documents/users/" +
+    FLOWLET_UID +
+    ":runQuery";
+  var body = {
+    structuredQuery: {
+      from: [{ collectionId: "expenses" }],
+      where: {
+        compositeFilter: {
+          op: "AND",
+          filters: [
+            {
+              fieldFilter: {
+                field: { fieldPath: "date" },
+                op: "EQUAL",
+                value: { stringValue: tx.date },
+              },
+            },
+            {
+              fieldFilter: {
+                field: { fieldPath: "amount" },
+                op: "EQUAL",
+                value: { doubleValue: tx.amount },
+              },
+            },
+          ],
+        },
+      },
+      limit: 20,
+    },
+  };
+  var res = UrlFetchApp.fetch(url, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(body),
+    headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true,
+  });
+  if (res.getResponseCode() >= 300) {
+    Logger.log("Dedupe query failed (writing anyway): " + res.getContentText());
+    return false;
+  }
+  var rows = JSON.parse(res.getContentText());
+  for (var i = 0; i < rows.length; i++) {
+    var doc = rows[i].document;
+    if (!doc) continue;
+    var id = doc.name.split("/").pop();
+    if (id.indexOf("gmail-") !== 0) return true; // manual entry exists
+  }
+  return false;
+}
+
 /** Write via Firestore REST. Doc id = Gmail message id → idempotent. */
 function writeExpense(messageId, tx) {
+  if (hasManualDuplicate(tx)) {
+    Logger.log(
+      "Skipped duplicate: " + tx.date + " ₹" + tx.amount + " (" + tx.merchant +
+        ") — a manual entry with this date+amount already exists.",
+    );
+    return;
+  }
   var url =
     "https://firestore.googleapis.com/v1/projects/" +
     FIREBASE_PROJECT_ID +

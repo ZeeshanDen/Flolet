@@ -47,6 +47,7 @@ Two options:
 ## How duplicates are prevented
 - Processed threads get the Gmail label `Flowlet/Synced` and are excluded from later searches.
 - The Firestore document id is `gmail-<messageId>` — re-running can only overwrite the same doc, never duplicate it.
+- **Manual-entry guard:** before writing, the script checks whether an expense you entered by hand already exists with the same date + amount, and skips the import if so (logged as "Skipped duplicate"). Two gmail imports never block each other — two real same-amount transactions arrive as two distinct emails. Edge case: if you manually logged one of two genuinely separate same-amount transactions on one day, the second email gets skipped — check the log.
 
 ## Adding more banks
 Each format is one entry in `PARSERS` (subject matcher + regex over the body). Paste a sample alert into an issue/note and add a parser like the AU Bank one.
