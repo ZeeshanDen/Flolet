@@ -18,19 +18,24 @@ var LABEL_NAME = "Flowlet/Synced";
 var SEARCH_WINDOW = "newer_than:2d"; // how far back each run looks
 // ────────────────────────────────────────────────────────────────────────
 
-// Map merchant keywords → Flowlet default category ids (default-0 … default-9).
+// Map merchant keywords → category NAMES exactly as they appear in your
+// Flowlet app (Profile → Manage categories). The script fetches your
+// categories each run and resolves names to ids, so custom categories work.
+// First matching rule wins — put specific merchants before generic keywords.
 var CATEGORY_RULES = [
-  { re: /ZEPTO|SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "default-0" }, // Food
-  { re: /BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "default-1" }, // Groceries
-  { re: /UBER|OLA|RAPIDO|IRCTC|REDBUS|METRO|FUEL|PETROL|HPCL|IOCL|BPCL/i, cat: "default-2" }, // Transport
-  { re: /AMAZON|FLIPKART|MYNTRA|AJIO|NYKAA|CROMA|MEESHO/i, cat: "default-3" }, // Shopping
-  { re: /ELECTRICITY|BSES|AIRTEL|JIO|VI |VODAFONE|BROADBAND|DTH|BILLDESK|RECHARGE/i, cat: "default-4" }, // Bills
-  { re: /RENT|NOBROKER/i, cat: "default-5" }, // Rent
-  { re: /PHARM|APOLLO|MEDPLUS|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "default-6" }, // Health
-  { re: /BOOKMYSHOW|NETFLIX|SPOTIFY|PRIME|HOTSTAR|PVR|INOX/i, cat: "default-7" }, // Fun
-  { re: /MAKEMYTRIP|GOIBIBO|OYO|AIRBNB|INDIGO|AIRASIA|VISTARA|CLEARTRIP/i, cat: "default-8" }, // Travel
+  { re: /JANWA/i, cat: "Mom Health" }, // specific merchant → mom's category
+  { re: /MEDICAL|PHARM|APOLLO|MEDPLUS|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health Expenses" },
+  { re: /ZEPTO|SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "Food" },
+  { re: /BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "Groceries" },
+  { re: /UBER|OLA|RAPIDO|IRCTC|REDBUS|METRO|FUEL|PETROL|HPCL|IOCL|BPCL/i, cat: "Transport" },
+  { re: /AMAZON|FLIPKART|MYNTRA|AJIO|NYKAA|CROMA|MEESHO/i, cat: "Shopping" },
+  { re: /ELECTRICITY|BSES|AIRTEL|JIO|VI |VODAFONE|BROADBAND|DTH|BILLDESK|RECHARGE/i, cat: "Bills" },
+  { re: /RENT|NOBROKER/i, cat: "Rent" },
+  { re: /BOOKMYSHOW|NETFLIX|SPOTIFY|PRIME|HOTSTAR|PVR|INOX/i, cat: "Fun" },
+  { re: /MAKEMYTRIP|GOIBIBO|OYO|AIRBNB|INDIGO|AIRASIA|VISTARA|CLEARTRIP/i, cat: "Travel" },
 ];
-var FALLBACK_CATEGORY = "default-9"; // Other
+var FALLBACK_CATEGORY_NAME = "Other";
+var FALLBACK_CATEGORY_ID = "default-9"; // used only if "Other" was renamed
 
 // Bank email parsers. Add one entry per bank/format.
 var PARSERS = [
@@ -189,7 +194,9 @@ function runSync(windowQuery) {
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
         var subject = msg.getSubject() || "";
-        var body = msg.getPlainBody() || "";
+        // Gmail hard-wraps long lines; merchants can straddle a break
+        // ("UPI/JANWA\nMEDICAL"), so flatten whitespace before parsing.
+        var body = (msg.getPlainBody() || "").replace(/\s+/g, " ");
         for (var i = 0; i < PARSERS.length; i++) {
           var p = PARSERS[i];
           if (!p.match.test(subject) && !p.match.test(body)) continue;
@@ -207,10 +214,49 @@ function runSync(windowQuery) {
   Logger.log("Synced " + synced + " expense(s).");
 }
 
+// Fetched once per run: lowercase category name → doc id.
+var _categoryMap = null;
+
+function categoryMap() {
+  if (_categoryMap) return _categoryMap;
+  _categoryMap = {};
+  var url =
+    "https://firestore.googleapis.com/v1/projects/" +
+    FIREBASE_PROJECT_ID +
+    "/databases/(default)/documents/users/" +
+    FLOWLET_UID +
+    "/categories?pageSize=300";
+  var res = UrlFetchApp.fetch(url, {
+    headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true,
+  });
+  if (res.getResponseCode() < 300) {
+    var docs = (JSON.parse(res.getContentText()).documents || []);
+    docs.forEach(function (d) {
+      var name = d.fields && d.fields.name && d.fields.name.stringValue;
+      if (!name) return;
+      var id = d.name.split("/").pop();
+      _categoryMap[name.toLowerCase()] = id;
+    });
+  } else {
+    Logger.log("Couldn't fetch categories: " + res.getContentText());
+  }
+  return _categoryMap;
+}
+
 function categoryFor(merchant) {
-  for (var i = 0; i < CATEGORY_RULES.length; i++)
-    if (CATEGORY_RULES[i].re.test(merchant)) return CATEGORY_RULES[i].cat;
-  return FALLBACK_CATEGORY;
+  var map = categoryMap();
+  for (var i = 0; i < CATEGORY_RULES.length; i++) {
+    if (!CATEGORY_RULES[i].re.test(merchant)) continue;
+    var id = map[CATEGORY_RULES[i].cat.toLowerCase()];
+    if (id) return id;
+    Logger.log(
+      'Rule matched "' + CATEGORY_RULES[i].cat +
+        "\" but no category with that name exists in the app — using fallback.",
+    );
+    break;
+  }
+  return map[FALLBACK_CATEGORY_NAME.toLowerCase()] || FALLBACK_CATEGORY_ID;
 }
 
 /** Write via Firestore REST. Doc id = Gmail message id → idempotent. */
