@@ -75,30 +75,54 @@ function getLabel() {
 
 /** Entry point — attach a time-driven trigger (every 10–15 min) to this. */
 function syncExpenses() {
+  runSync(SEARCH_WINDOW);
+}
+
+/**
+ * One-time backfill: imports every alert from the last N days (default 31 —
+ * covers the current month). Run manually from the editor. Safe to re-run:
+ * doc ids are Gmail message ids, so existing entries are overwritten, never
+ * duplicated.
+ */
+function backfillMonth() {
+  runSync("newer_than:31d");
+}
+
+/** Backfill a custom range instead, e.g. since a date: */
+function backfillSince() {
+  runSync("after:2026/08/01"); // edit the date, then Run ▶
+}
+
+function runSync(windowQuery) {
   if (FLOWLET_UID.indexOf("PASTE_") === 0)
     throw new Error("Set FLOWLET_UID in the CONFIG block first.");
   var label = getLabel();
   var query =
-    SEARCH_WINDOW + ' subject:"transaction alert" -label:' + LABEL_NAME;
+    windowQuery + ' subject:"transaction alert" -label:' + LABEL_NAME;
 
-  var threads = GmailApp.search(query, 0, 50);
   var synced = 0;
-  threads.forEach(function (thread) {
-    thread.getMessages().forEach(function (msg) {
-      var subject = msg.getSubject() || "";
-      var body = msg.getPlainBody() || "";
-      for (var i = 0; i < PARSERS.length; i++) {
-        var p = PARSERS[i];
-        if (!p.match.test(subject) && !p.match.test(body)) continue;
-        var tx = p.parse(body);
-        if (!tx || !(tx.amount > 0)) continue;
-        writeExpense(msg.getId(), tx);
-        synced++;
-        break;
-      }
+  // Page through in chunks of 50 threads until the search is exhausted.
+  for (;;) {
+    var threads = GmailApp.search(query, 0, 50);
+    if (threads.length === 0) break;
+    threads.forEach(function (thread) {
+      thread.getMessages().forEach(function (msg) {
+        var subject = msg.getSubject() || "";
+        var body = msg.getPlainBody() || "";
+        for (var i = 0; i < PARSERS.length; i++) {
+          var p = PARSERS[i];
+          if (!p.match.test(subject) && !p.match.test(body)) continue;
+          var tx = p.parse(body);
+          if (!tx || !(tx.amount > 0)) continue;
+          writeExpense(msg.getId(), tx);
+          synced++;
+          break;
+        }
+      });
+      thread.addLabel(label); // labeling removes it from the next page's search
     });
-    thread.addLabel(label);
-  });
+    if (threads.length < 50) break;
+  }
   Logger.log("Synced " + synced + " expense(s).");
 }
 

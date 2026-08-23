@@ -31,7 +31,10 @@ Open Flowlet → **Profile** → copy the **User ID** shown under your email.
 ### 3. Authorize + test
 Run ▶ `syncExpenses` once from the editor. Grant the permission prompts (it's your own script — the "unverified app" warning is expected; Advanced → Go to project). Check Flowlet History: the recent AU Bank transactions should appear.
 
-### 4. Schedule it
+### 4. Backfill this month's expenses
+Run ▶ **`backfillMonth`** once — it imports every alert from the last 31 days. For a different range, edit the date inside `backfillSince` and run that instead. Re-running is safe (same email always maps to the same expense doc — overwrite, never duplicate).
+
+### 5. Schedule it
 Triggers (⏰ icon) → **Add trigger** → `syncExpenses` → time-driven → every **10 minutes**.
 
 ## Second inbox
