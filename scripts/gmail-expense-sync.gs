@@ -23,7 +23,7 @@ var CATEGORY_RULES = [
   { re: /ZEPTO|SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "default-0" }, // Food
   { re: /BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "default-1" }, // Groceries
   { re: /UBER|OLA|RAPIDO|IRCTC|REDBUS|METRO|FUEL|PETROL|HPCL|IOCL|BPCL/i, cat: "default-2" }, // Transport
-  { re: /AMAZON|FLIPKART|MYNTRA|AJIO|NYKAA|CROMA/i, cat: "default-3" }, // Shopping
+  { re: /AMAZON|FLIPKART|MYNTRA|AJIO|NYKAA|CROMA|MEESHO/i, cat: "default-3" }, // Shopping
   { re: /ELECTRICITY|BSES|AIRTEL|JIO|VI |VODAFONE|BROADBAND|DTH|BILLDESK|RECHARGE/i, cat: "default-4" }, // Bills
   { re: /RENT|NOBROKER/i, cat: "default-5" }, // Rent
   { re: /PHARM|APOLLO|MEDPLUS|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "default-6" }, // Health
@@ -67,6 +67,38 @@ var PARSERS = [
       return null;
     },
   },
+  {
+    // SBI Card (incl. PhonePe SBI co-brand):
+    // "Rs.217.00 spent on your SBI Credit Card ending with 8904 at MEESHOTECHNOLOGIESPRI on 22-08-26 via UPI (Ref No. ...)"
+    name: "SBI Card",
+    match: /SBI c(?:ard|redit card)/i,
+    parse: function (body) {
+      var m = body.match(
+        /Rs\.?\s*([\d,]+(?:\.\d+)?)\s*spent on your SBI Credit Card ending(?: with)?\s*(\d+)\s*at\s*(.+?)\s*on\s*(\d{2}-\d{2}-\d{2,4})/i,
+      );
+      if (m && m[1] && m[4]) {
+        return {
+          amount: parseFloat(m[1].replace(/,/g, "")),
+          merchant: cleanMerchant(m[3]),
+          date: ddmmyyyyToIso(m[4]),
+          card: m[2] || "",
+        };
+      }
+      // Fallback: no "at MERCHANT" segment
+      var f = body.match(
+        /Rs\.?\s*([\d,]+(?:\.\d+)?)\s*spent on your SBI Credit Card[\s\S]*?on\s*(\d{2}-\d{2}-\d{2,4})/i,
+      );
+      if (f && f[1] && f[2]) {
+        return {
+          amount: parseFloat(f[1].replace(/,/g, "")),
+          merchant: "Card spend",
+          date: ddmmyyyyToIso(f[2]),
+          card: "",
+        };
+      }
+      return null;
+    },
+  },
   // Add more banks here:
   // { name: "HDFC", match: /HDFC Bank/i, parse: function (body) { ... } },
 ];
@@ -82,7 +114,8 @@ function cleanMerchant(raw) {
 function ddmmyyyyToIso(d) {
   var p = String(d || "").split("-");
   if (p.length !== 3) return "";
-  return p[2] + "-" + p[1] + "-" + p[0];
+  var year = p[2].length === 2 ? "20" + p[2] : p[2]; // "26" → "2026"
+  return year + "-" + p[1] + "-" + p[0];
 }
 
 function getLabel() {
