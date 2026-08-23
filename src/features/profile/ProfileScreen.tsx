@@ -8,6 +8,7 @@ import {
   Users,
   ChevronRight,
   ShieldCheck,
+  Copy as CopyIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [vaultOpen, setVaultOpen] = useState(false);
+  const [uidCopied, setUidCopied] = useState(false);
   const vaultStatus = useVault((s) => s.status);
   const { groups } = useGroups();
 
@@ -58,6 +60,22 @@ export default function ProfileScreen() {
         <div className="min-w-0">
           <p className="truncate font-semibold">{profile?.displayName}</p>
           <p className="truncate text-sm text-muted">{user?.email}</p>
+          <button
+            onClick={async () => {
+              if (!user) return;
+              try {
+                await navigator.clipboard.writeText(user.uid);
+                setUidCopied(true);
+                setTimeout(() => setUidCopied(false), 1500);
+              } catch {
+                /* clipboard unavailable */
+              }
+            }}
+            className="mt-0.5 flex items-center gap-1 text-xs text-muted"
+          >
+            <CopyIcon size={12} />
+            {uidCopied ? "Copied" : `User ID: ${user?.uid.slice(0, 10)}…`}
+          </button>
         </div>
       </div>
 
