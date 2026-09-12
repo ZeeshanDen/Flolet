@@ -43,6 +43,9 @@ export default function MedicineSheet({
   const [weekday, setWeekday] = useState(1);
   const [unitsPerDose, setUnitsPerDose] = useState("1");
   const [stock, setStock] = useState("");
+  const [packUnits, setPackUnits] = useState("");
+  const [packMrp, setPackMrp] = useState("");
+  const [packPrice, setPackPrice] = useState("");
   const [notes, setNotes] = useState("");
   const [refill, setRefill] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,6 +66,9 @@ export default function MedicineSheet({
       setUnitsPerDose(String(medicine.unitsPerDose));
       setNotes(medicine.notes ?? "");
       setStock(String(remainingUnits(medicine)));
+      setPackUnits(medicine.packUnits ? String(medicine.packUnits) : "");
+      setPackMrp(medicine.packMrp ? String(medicine.packMrp) : "");
+      setPackPrice(medicine.packPrice ? String(medicine.packPrice) : "");
       if (medicine.schedule.type === "daily") {
         setSchedType("daily");
         setSlots(medicine.schedule.slots);
@@ -79,6 +85,9 @@ export default function MedicineSheet({
       setWeekday(1);
       setUnitsPerDose("1");
       setStock("");
+      setPackUnits("");
+      setPackMrp("");
+      setPackPrice("");
       setNotes("");
     }
   }, [open, medicine]);
@@ -112,6 +121,10 @@ export default function MedicineSheet({
       stock: numStock,
       stockAsOf: todayIso(),
       ...(personId ? { personId } : {}),
+      // Pricing is optional; Firestore rejects undefined, so only include set values.
+      ...(parseFloat(packUnits) > 0 ? { packUnits: parseFloat(packUnits) } : {}),
+      ...(parseFloat(packMrp) > 0 ? { packMrp: parseFloat(packMrp) } : {}),
+      ...(parseFloat(packPrice) > 0 ? { packPrice: parseFloat(packPrice) } : {}),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
     };
     try {
@@ -355,6 +368,40 @@ export default function MedicineSheet({
         onChange={(e) => setStock(e.target.value)}
         aria-label="Current stock"
       />
+
+      {/* Pricing (optional) — powers the monthly-cost view */}
+      <div className="mb-2 text-xs font-semibold text-muted">
+        Pricing per pack/strip (optional)
+      </div>
+      <div className="mb-3 flex gap-2">
+        <input
+          className="input flex-1"
+          type="number"
+          inputMode="decimal"
+          placeholder="Units/pack"
+          value={packUnits}
+          onChange={(e) => setPackUnits(e.target.value)}
+          aria-label="Units per pack"
+        />
+        <input
+          className="input flex-1"
+          type="number"
+          inputMode="decimal"
+          placeholder="MRP ₹"
+          value={packMrp}
+          onChange={(e) => setPackMrp(e.target.value)}
+          aria-label="MRP per pack"
+        />
+        <input
+          className="input flex-1"
+          type="number"
+          inputMode="decimal"
+          placeholder="You pay ₹"
+          value={packPrice}
+          onChange={(e) => setPackPrice(e.target.value)}
+          aria-label="Your price per pack"
+        />
+      </div>
 
       <input
         className="input mb-4"

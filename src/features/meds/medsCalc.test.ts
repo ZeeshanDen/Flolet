@@ -7,6 +7,7 @@ import {
   scheduleLabel,
   unitsNeededBetween,
   unitsShort,
+  monthlyCost,
 } from "./medsCalc";
 import type { Medicine } from "@/lib/types";
 
@@ -109,6 +110,20 @@ describe("medsCalc", () => {
     expect(
       unitsShort({ ...med, stock: 100 }, "2026-07-18", "2026-07-09"),
     ).toBe(0);
+  });
+
+  it("monthly cost scales pack price by consumption", () => {
+    // 2/day = 60 units/mo; 15-tab strip at ₹90 paid, ₹120 MRP → 4 strips
+    const med: Medicine = {
+      ...base,
+      schedule: daily(["morning", "night"]),
+      packUnits: 15,
+      packPrice: 90,
+      packMrp: 120,
+    };
+    expect(monthlyCost(med)).toEqual({ units: 60, cost: 360, mrpCost: 480 });
+    // No pricing → nulls
+    expect(monthlyCost({ ...base, schedule: daily(["night"]) }).cost).toBeNull();
   });
 
   it("labels read naturally", () => {

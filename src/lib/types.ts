@@ -32,6 +32,10 @@ export interface Medicine {
   stock: number; // units on hand as of stockAsOf
   stockAsOf: string; // ISO yyyy-mm-dd, local date
   personId?: string; // MedPerson id; absent = unassigned
+  // Pricing (optional): per pack/strip, for the monthly-cost view.
+  packUnits?: number; // units in one pack (e.g. 15-tablet strip)
+  packMrp?: number; // printed MRP per pack
+  packPrice?: number; // what you actually pay per pack
   notes?: string;
   createdAt: number;
 }

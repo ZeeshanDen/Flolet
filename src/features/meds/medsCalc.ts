@@ -121,6 +121,31 @@ export function unitsShort(
   return Math.max(0, Math.ceil(needed - remainingUnits(med, today)));
 }
 
+/** Average units consumed per 30-day month (weekly ≈ 4.33 doses/month). */
+export function monthlyUnits(med: Medicine): number {
+  const dosesPerMonth =
+    med.schedule.type === "daily"
+      ? Math.max(1, med.schedule.slots.length) * 30
+      : 52 / 12;
+  return dosesPerMonth * med.unitsPerDose;
+}
+
+export interface MonthlyCost {
+  units: number;
+  cost: number | null; // at your price; null when pricing not set
+  mrpCost: number | null;
+}
+
+/** Monthly consumption cost from pack pricing; nulls when unpriced. */
+export function monthlyCost(med: Medicine): MonthlyCost {
+  const units = monthlyUnits(med);
+  const per = (pack?: number) =>
+    pack && pack > 0 && med.packUnits && med.packUnits > 0
+      ? Math.round((units * pack) / med.packUnits)
+      : null;
+  return { units, cost: per(med.packPrice), mrpCost: per(med.packMrp) };
+}
+
 /** Short unit label for order lists: "tabs", "inj", "ml", … */
 export function orderUnitLabel(unit: string, qty: number): string {
   switch (unit) {

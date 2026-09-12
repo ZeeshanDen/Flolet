@@ -1,5 +1,13 @@
 import { useMemo, useState } from "react";
-import { Plus, Pill, AlertTriangle, ClipboardList } from "lucide-react";
+import {
+  Plus,
+  Pill,
+  AlertTriangle,
+  ClipboardList,
+  PackagePlus,
+  MoreVertical,
+  IndianRupee,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useMedicines } from "@/features/meds/useMedicines";
 import { usePersons } from "@/features/meds/usePersons";
@@ -11,6 +19,8 @@ import {
 } from "@/features/meds/medsCalc";
 import MedicineSheet from "@/features/meds/MedicineSheet";
 import OrderSheet from "@/features/meds/OrderSheet";
+import StockInSheet from "@/features/meds/StockInSheet";
+import CostSheet from "@/features/meds/CostSheet";
 import { cn } from "@/lib/utils";
 import type { Medicine } from "@/lib/types";
 
@@ -110,6 +120,9 @@ export default function MedsScreen() {
     !filter && m.personId ? personById[m.personId] : undefined;
 
   const [orderOpen, setOrderOpen] = useState(false);
+  const [stockInOpen, setStockInOpen] = useState(false);
+  const [costOpen, setCostOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const openAdd = () => {
     setEditing(null);
@@ -124,15 +137,53 @@ export default function MedsScreen() {
     <div className="px-4 pt-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Medicines</h1>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setOrderOpen(true)}
             disabled={medicines.length === 0}
-            className="btn-ghost px-3 py-2 disabled:opacity-40"
+            aria-label="Order medicines"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-text disabled:opacity-40"
           >
-            <ClipboardList size={18} />
-            Order
+            <ClipboardList size={19} />
           </button>
+          <button
+            onClick={() => setStockInOpen(true)}
+            disabled={medicines.length === 0}
+            aria-label="Stock in"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-text disabled:opacity-40"
+          >
+            <PackagePlus size={19} />
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="More options"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-text"
+            >
+              <MoreVertical size={19} />
+            </button>
+            {menuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  aria-hidden="true"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-11 z-40 w-48 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setCostOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium"
+                  >
+                    <IndianRupee size={16} className="text-brand-soft" />
+                    Monthly cost
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button onClick={openAdd} className="btn-brand px-3 py-2">
             <Plus size={18} />
             Add
@@ -232,10 +283,20 @@ export default function MedsScreen() {
         onClose={() => setSheetOpen(false)}
         medicine={editing}
       />
-      {/* Order list follows the active person filter (Everyone / Mom / …). */}
+      {/* These follow the active person filter (Everyone / Mom / …). */}
       <OrderSheet
         open={orderOpen}
         onClose={() => setOrderOpen(false)}
+        medicines={sorted}
+      />
+      <StockInSheet
+        open={stockInOpen}
+        onClose={() => setStockInOpen(false)}
+        medicines={sorted}
+      />
+      <CostSheet
+        open={costOpen}
+        onClose={() => setCostOpen(false)}
         medicines={sorted}
       />
     </div>
