@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/features/auth/AuthContext";
 import App from "@/App";
 import "@/lib/theme"; // applies saved theme before first paint
+import "@/lib/iosViewport"; // snap window back after iOS keyboard dismissal
 import "@/index.css";
 
 const queryClient = new QueryClient({

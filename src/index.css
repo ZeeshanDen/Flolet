@@ -52,11 +52,19 @@ body {
 }
 
 /* iOS auto-zooms any focused control with font-size < 16px — pin the floor
-   so tapping a textbox never zooms the page. */
+   so tapping a textbox never zooms the page. min-width: 0 lets inputs shrink
+   inside flex rows instead of pushing sheets wider than the viewport. */
 input,
 select,
 textarea {
   font-size: max(1rem, 16px);
+  min-width: 0;
+}
+
+/* Never allow document-level horizontal panning. */
+html,
+body {
+  overflow-x: hidden;
 }
 
 /* Kill double-tap-to-zoom (and the 300ms tap delay) app-wide. */

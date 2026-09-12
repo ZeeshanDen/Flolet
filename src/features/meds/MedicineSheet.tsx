@@ -373,9 +373,11 @@ export default function MedicineSheet({
       <div className="mb-2 text-xs font-semibold text-muted">
         Pricing per pack/strip (optional)
       </div>
+      {/* min-w-0: number inputs refuse to flex-shrink otherwise and push the
+          sheet wider than the viewport (horizontal wiggle on iOS). */}
       <div className="mb-3 flex gap-2">
         <input
-          className="input flex-1"
+          className="input min-w-0 flex-1"
           type="number"
           inputMode="decimal"
           placeholder="Units/pack"
@@ -384,7 +386,7 @@ export default function MedicineSheet({
           aria-label="Units per pack"
         />
         <input
-          className="input flex-1"
+          className="input min-w-0 flex-1"
           type="number"
           inputMode="decimal"
           placeholder="MRP ₹"
@@ -393,7 +395,7 @@ export default function MedicineSheet({
           aria-label="MRP per pack"
         />
         <input
-          className="input flex-1"
+          className="input min-w-0 flex-1"
           type="number"
           inputMode="decimal"
           placeholder="You pay ₹"

@@ -71,7 +71,7 @@ export default function BottomSheet({
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="noscroll absolute inset-x-0 bottom-0 mx-auto max-w-md overflow-y-auto rounded-t-[26px] bg-surface px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_50px_-12px_rgba(20,16,45,0.35)] outline-none animate-[sheetUp_0.24s_cubic-bezier(0.22,1,0.36,1)]"
+        className="noscroll absolute inset-x-0 bottom-0 mx-auto max-w-md overflow-y-auto overflow-x-hidden rounded-t-[26px] bg-surface px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-3 shadow-[0_-18px_50px_-12px_rgba(20,16,45,0.35)] outline-none animate-[sheetUp_0.24s_cubic-bezier(0.22,1,0.36,1)]"
         style={{ maxHeight: maxHeight ?? "82%" }}
       >
         <div className="mx-auto mb-3 mt-0.5 h-[5px] w-10 rounded-full bg-border" />
