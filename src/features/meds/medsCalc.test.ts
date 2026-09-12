@@ -5,6 +5,8 @@ import {
   runOutDate,
   daysLeft,
   scheduleLabel,
+  unitsNeededBetween,
+  unitsShort,
 } from "./medsCalc";
 import type { Medicine } from "@/lib/types";
 
@@ -83,6 +85,30 @@ describe("medsCalc", () => {
     const med: Medicine = { ...base, schedule: daily(["morning"]) };
     expect(consumedDoses(med, "2026-06-20")).toBe(0);
     expect(remainingUnits(med, "2026-06-20")).toBe(20);
+  });
+
+  it("order math: daily needs are inclusive of both end days", () => {
+    const med: Medicine = { ...base, schedule: daily(["morning", "night"]) };
+    // 1st..10th inclusive = 10 days × 2 doses = 20 units
+    expect(unitsNeededBetween(med, "2026-07-01", "2026-07-10")).toBe(20);
+    expect(unitsNeededBetween(med, "2026-07-01", "2026-07-01")).toBe(2);
+  });
+
+  it("order math: weekly counts scheduled weekdays inclusive", () => {
+    const med: Medicine = { ...base, schedule: { type: "weekly", weekday: 1 } };
+    // Mondays in Jul 6..Jul 20 inclusive: 6, 13, 20 → 3 doses
+    expect(unitsNeededBetween(med, "2026-07-06", "2026-07-20")).toBe(3);
+  });
+
+  it("order math: shortage subtracts remaining stock and never goes negative", () => {
+    // 2/day, stock 20 on Jul 1 → 4 left on Jul 9 (8 days × 2 = 16 used)
+    const med: Medicine = { ...base, schedule: daily(["morning", "night"]) };
+    // Jul 9..Jul 18 inclusive = 10 days × 2 = 20 needed, 4 left → buy 16
+    expect(unitsShort(med, "2026-07-18", "2026-07-09")).toBe(16);
+    // Big stock → nothing to buy
+    expect(
+      unitsShort({ ...med, stock: 100 }, "2026-07-18", "2026-07-09"),
+    ).toBe(0);
   });
 
   it("labels read naturally", () => {

@@ -87,6 +87,56 @@ export function daysLeft(med: Medicine, today: string = todayIso()): number {
   );
 }
 
+/**
+ * Units required to cover every scheduled dose from `from` through `to`,
+ * both days inclusive. Used by the order builder.
+ */
+export function unitsNeededBetween(
+  med: Medicine,
+  from: string,
+  to: string,
+): number {
+  const start = parseISO(from);
+  const end = parseISO(to);
+  const days = differenceInCalendarDays(end, start);
+  if (days < 0) return 0;
+  const doses =
+    med.schedule.type === "daily"
+      ? (days + 1) * dosesPerDay(med)
+      : // weekdayOccurrences is start-exclusive; step back a day to include `from`.
+        weekdayOccurrences(addDays(start, -1), end, med.schedule.weekday);
+  return doses * med.unitsPerDose;
+}
+
+/**
+ * Units to BUY so the supply lasts through `to`: needed minus what's left,
+ * rounded up to whole units, never negative.
+ */
+export function unitsShort(
+  med: Medicine,
+  to: string,
+  today: string = todayIso(),
+): number {
+  const needed = unitsNeededBetween(med, today, to);
+  return Math.max(0, Math.ceil(needed - remainingUnits(med, today)));
+}
+
+/** Short unit label for order lists: "tabs", "inj", "ml", … */
+export function orderUnitLabel(unit: string, qty: number): string {
+  switch (unit) {
+    case "tablet":
+      return qty === 1 ? "tab" : "tabs";
+    case "injection":
+      return "inj";
+    case "sachet":
+      return qty === 1 ? "sachet" : "sachets";
+    case "drop":
+      return qty === 1 ? "drop" : "drops";
+    default:
+      return unit;
+  }
+}
+
 /** Human schedule summary: "Morning + night · 2×/day" or "Weekly · Mon". */
 export function scheduleLabel(med: Medicine): string {
   if (med.schedule.type === "weekly")

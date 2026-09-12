@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Pill, AlertTriangle } from "lucide-react";
+import { Plus, Pill, AlertTriangle, ClipboardList } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useMedicines } from "@/features/meds/useMedicines";
 import { usePersons } from "@/features/meds/usePersons";
@@ -10,6 +10,7 @@ import {
   scheduleLabel,
 } from "@/features/meds/medsCalc";
 import MedicineSheet from "@/features/meds/MedicineSheet";
+import OrderSheet from "@/features/meds/OrderSheet";
 import { cn } from "@/lib/utils";
 import type { Medicine } from "@/lib/types";
 
@@ -108,6 +109,8 @@ export default function MedsScreen() {
   const nameFor = (m: Medicine) =>
     !filter && m.personId ? personById[m.personId] : undefined;
 
+  const [orderOpen, setOrderOpen] = useState(false);
+
   const openAdd = () => {
     setEditing(null);
     setSheetOpen(true);
@@ -121,10 +124,20 @@ export default function MedsScreen() {
     <div className="px-4 pt-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Medicines</h1>
-        <button onClick={openAdd} className="btn-brand px-3 py-2">
-          <Plus size={18} />
-          Add
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setOrderOpen(true)}
+            disabled={medicines.length === 0}
+            className="btn-ghost px-3 py-2 disabled:opacity-40"
+          >
+            <ClipboardList size={18} />
+            Order
+          </button>
+          <button onClick={openAdd} className="btn-brand px-3 py-2">
+            <Plus size={18} />
+            Add
+          </button>
+        </div>
       </div>
 
       {persons.length > 0 && (
@@ -218,6 +231,12 @@ export default function MedsScreen() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         medicine={editing}
+      />
+      {/* Order list follows the active person filter (Everyone / Mom / …). */}
+      <OrderSheet
+        open={orderOpen}
+        onClose={() => setOrderOpen(false)}
+        medicines={sorted}
       />
     </div>
   );
