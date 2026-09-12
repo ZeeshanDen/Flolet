@@ -22,3 +22,12 @@ window.addEventListener("focusout", () => {
   // Let iOS finish its keyboard-dismiss dance first.
   setTimeout(snapBack, 250);
 });
+
+// Standalone relaunch can RESTORE the panned viewport from the previous
+// session — the nav then floats mid-screen until the user swipes. Snap on
+// launch and whenever the app returns to the foreground.
+setTimeout(snapBack, 100);
+window.addEventListener("pageshow", () => setTimeout(snapBack, 100));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") setTimeout(snapBack, 100);
+});

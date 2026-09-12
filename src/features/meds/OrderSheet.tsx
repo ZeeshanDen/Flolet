@@ -29,12 +29,14 @@ export default function OrderSheet({
   const [till, setTill] = useState(defaultTill);
   // Quantity overrides keyed by medicine id; unset = computed shortfall.
   const [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setTill(defaultTill());
     setOverrides({});
+    setRemoved(new Set());
     setCopied(false);
   }, [open]);
 
@@ -43,6 +45,7 @@ export default function OrderSheet({
   const rows = useMemo(() => {
     if (!dateOk) return [];
     return medicines
+      .filter((m) => !removed.has(m.id))
       .map((m) => ({
         med: m,
         short: unitsShort(m, till),
@@ -50,7 +53,7 @@ export default function OrderSheet({
       }))
       .filter((r) => r.short > 0)
       .sort((a, b) => b.short - a.short);
-  }, [medicines, till, dateOk]);
+  }, [medicines, till, dateOk, removed]);
 
   const qtyOf = (id: string, computed: number) => overrides[id] ?? computed;
   const bump = (id: string, computed: number, delta: number) =>
@@ -58,6 +61,9 @@ export default function OrderSheet({
       ...o,
       [id]: Math.max(0, qtyOf(id, computed) + delta),
     }));
+  const setExact = (id: string, v: string) =>
+    setOverrides((o) => ({ ...o, [id]: Math.max(0, parseFloat(v) || 0) }));
+  const remove = (id: string) => setRemoved((r) => new Set(r).add(id));
 
   const orderLines = rows
     .map((r) => ({ r, qty: qtyOf(r.med.id, r.short) }))
@@ -131,7 +137,7 @@ export default function OrderSheet({
               <div
                 key={med.id}
                 className={cn(
-                  "flex items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2.5",
+                  "flex items-center gap-2 rounded-2xl border border-border bg-card py-2.5 pl-3 pr-2",
                   qty === 0 && "opacity-45",
                 )}
               >
@@ -141,25 +147,35 @@ export default function OrderSheet({
                     {left} left · needs {short} more
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => bump(med.id, short, -1)}
-                    aria-label={`Less ${med.name}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-muted"
-                  >
-                    <Minus size={15} />
-                  </button>
-                  <span className="w-12 text-center font-bold tabular-nums">
-                    {qty}
-                  </span>
-                  <button
-                    onClick={() => bump(med.id, short, 1)}
-                    aria-label={`More ${med.name}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-muted"
-                  >
-                    <Plus size={15} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => bump(med.id, short, -1)}
+                  aria-label={`Less ${med.name}`}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-muted"
+                >
+                  <Minus size={15} />
+                </button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={qty}
+                  onChange={(e) => setExact(med.id, e.target.value)}
+                  aria-label={`${med.name} quantity`}
+                  className="w-12 shrink-0 rounded-xl border border-border bg-surface py-1.5 text-center font-bold tabular-nums outline-none focus:border-brand"
+                />
+                <button
+                  onClick={() => bump(med.id, short, 1)}
+                  aria-label={`More ${med.name}`}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-muted"
+                >
+                  <Plus size={15} />
+                </button>
+                <button
+                  onClick={() => remove(med.id)}
+                  aria-label={`Remove ${med.name} from this order`}
+                  className="flex h-9 w-7 shrink-0 items-center justify-center text-muted hover:text-bad"
+                >
+                  <X size={15} />
+                </button>
               </div>
             );
           })}
