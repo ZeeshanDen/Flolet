@@ -63,20 +63,43 @@ const s = {
 };
 
 export function SignInScreen() {
-  const { signInEmail } = useAuth();
+  const { signInEmail, signUpEmail } = useAuth();
+  const [mode, setMode] = useState<"in" | "up">("in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const friendly = (err: unknown): string => {
+    const code = (err as { code?: string })?.code ?? "";
+    switch (code) {
+      case "auth/email-already-in-use":
+        return "An account with this email already exists — sign in instead.";
+      case "auth/weak-password":
+        return "Password must be at least 6 characters.";
+      case "auth/invalid-email":
+        return "That email address doesn't look right.";
+      case "auth/too-many-requests":
+        return "Too many attempts — wait a minute and try again.";
+      case "auth/network-request-failed":
+        return "Network error — check your connection.";
+      default:
+        return mode === "in"
+          ? "Wrong email or password."
+          : "Couldn't create the account. Try again.";
+    }
+  };
 
   const submit = async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      await signInEmail(email.trim(), password);
-    } catch {
-      setError("Wrong email or password.");
+      if (mode === "in") await signInEmail(email.trim(), password);
+      else await signUpEmail(email.trim(), password, name.trim());
+    } catch (err) {
+      setError(friendly(err));
     } finally {
       setBusy(false);
     }
@@ -91,7 +114,21 @@ export function SignInScreen() {
         <Text style={{ fontSize: 30 }}>💜</Text>
       </View>
       <Text style={s.h1}>Flowlet</Text>
-      <Text style={s.sub}>Sign in with your Flowlet account</Text>
+      <Text style={s.sub}>
+        {mode === "in"
+          ? "Sign in with your Flowlet account"
+          : "Create your Flowlet account"}
+      </Text>
+      {mode === "up" && (
+        <TextInput
+          style={s.input}
+          placeholder="Your name"
+          placeholderTextColor={C.muted}
+          autoCapitalize="words"
+          value={name}
+          onChangeText={setName}
+        />
+      )}
       <TextInput
         style={s.input}
         placeholder="Email"
@@ -114,13 +151,29 @@ export function SignInScreen() {
         {busy ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={s.btnText}>Sign in</Text>
+          <Text style={s.btnText}>
+            {mode === "in" ? "Sign in" : "Create account"}
+          </Text>
         )}
       </TouchableOpacity>
-      <Text style={{ color: C.muted, marginTop: 18, textAlign: "center", fontSize: 13 }}>
-        Google sign-in account? Set a password first: web app → sign out →
-        "Forgot password" flow, or keep using the web version.
-      </Text>
+      <TouchableOpacity
+        onPress={() => {
+          setMode((m) => (m === "in" ? "up" : "in"));
+          setError(null);
+        }}
+      >
+        <Text style={s.link}>
+          {mode === "in"
+            ? "New here? Create an account"
+            : "Already have an account? Sign in"}
+        </Text>
+      </TouchableOpacity>
+      {mode === "in" && (
+        <Text style={{ color: C.muted, marginTop: 14, textAlign: "center", fontSize: 13 }}>
+          Signed up with Google on the web? Native Google sign-in is coming —
+          use the web app meanwhile, or create a password account.
+        </Text>
+      )}
     </KeyboardAvoidingView>
   );
 }
