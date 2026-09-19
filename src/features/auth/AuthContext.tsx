@@ -104,13 +104,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser) return false;
     await reload(auth.currentUser);
     const v = auth.currentUser.emailVerified;
-    setVerified(v);
     if (v) {
+      // Force-refresh the ID token: rules check email_verified on the TOKEN,
+      // which stays stale (false) for up to an hour after verification.
+      await auth.currentUser.getIdToken(true);
       setUser(auth.currentUser);
       ensureProfile(auth.currentUser).catch((e) =>
         console.error("ensureProfile", e),
       );
     }
+    setVerified(v);
     return v;
   }, []);
 

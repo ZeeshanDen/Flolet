@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { format, parseISO } from "date-fns";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useMedicines, usePersons } from "../features/meds/useMedicines";
 import {
   remainingUnits,
@@ -414,7 +415,7 @@ export default function MedsScreen() {
     !filter && m.personId ? personById[m.personId] : undefined;
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <View
           style={{
@@ -532,6 +533,6 @@ export default function MedsScreen() {
       <Modal visible={formOpen} animationType="slide" presentationStyle="pageSheet">
         <MedicineForm medicine={editing} onClose={() => setFormOpen(false)} />
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

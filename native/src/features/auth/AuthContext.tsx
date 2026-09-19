@@ -109,13 +109,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser) return false;
     await reload(auth.currentUser);
     const v = auth.currentUser.emailVerified;
-    setVerified(v);
     if (v) {
+      // The cached ID token still carries email_verified=false — rules would
+      // reject every read until it refreshes. Force it before proceeding.
+      await auth.currentUser.getIdToken(true);
       setUser(auth.currentUser);
       ensureProfile(auth.currentUser).catch((e) =>
         console.error("ensureProfile", e),
       );
     }
+    setVerified(v);
     return v;
   };
 

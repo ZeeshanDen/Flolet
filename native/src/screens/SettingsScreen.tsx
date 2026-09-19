@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../features/auth/AuthContext";
 import { useVault } from "../features/vault/vault";
 import { C } from "../lib/theme";
@@ -8,7 +9,10 @@ export default function SettingsScreen() {
   const { status } = useVault();
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, padding: 20 }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: C.bg, padding: 20 }}
+      edges={["top"]}
+    >
       <Text style={{ color: C.text, fontSize: 24, fontWeight: "800", marginBottom: 20 }}>
         Settings
       </Text>
@@ -49,6 +53,6 @@ export default function SettingsScreen() {
       >
         <Text style={{ color: C.bad, fontWeight: "700" }}>Sign out</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
