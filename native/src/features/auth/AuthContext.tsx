@@ -33,27 +33,37 @@ const DEFAULT_CATEGORIES = [
   { name: "Other", icon: "CircleDollarSign", color: "#94a3b8", order: 9 },
 ];
 
-/** Same as web: seed profile + categories only for a VERIFIED user. */
+/**
+ * Same as web: seed profile + categories only for a VERIFIED user.
+ * Profile and categories are checked independently — a half-finished seed
+ * (e.g. a permission failure mid-way) heals on the next run.
+ */
 async function ensureProfile(user: User) {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
-  if (snap.exists()) return;
-  await setDoc(
-    ref,
-    {
-      displayName: user.displayName || user.email?.split("@")[0] || "User",
-      email: user.email || "",
-      createdAt: Date.now(),
-      defaultCurrency: "INR",
-      ...(user.photoURL ? { photoURL: user.photoURL } : {}),
-    },
-    { merge: true },
+  if (!snap.exists()) {
+    await setDoc(
+      ref,
+      {
+        displayName: user.displayName || user.email?.split("@")[0] || "User",
+        email: user.email || "",
+        createdAt: Date.now(),
+        defaultCurrency: "INR",
+        ...(user.photoURL ? { photoURL: user.photoURL } : {}),
+      },
+      { merge: true },
+    );
+  }
+  const marker = await getDoc(
+    doc(db, "users", user.uid, "categories", "default-0"),
   );
-  const batch = writeBatch(db);
-  DEFAULT_CATEGORIES.forEach((cat, i) =>
-    batch.set(doc(db, "users", user.uid, "categories", `default-${i}`), cat),
-  );
-  await batch.commit();
+  if (!marker.exists()) {
+    const batch = writeBatch(db);
+    DEFAULT_CATEGORIES.forEach((cat, i) =>
+      batch.set(doc(db, "users", user.uid, "categories", `default-${i}`), cat),
+    );
+    await batch.commit();
+  }
 }
 
 interface AuthState {
@@ -84,8 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(u);
         setVerified(!!u?.emailVerified);
         setLoading(false);
-        if (u?.emailVerified)
+        if (u?.emailVerified) {
+          // The cached ID token can predate verification (email_verified=false)
+          // and Firestore rules would reject everything — refresh it once.
+          u.getIdToken(true).catch(() => {});
           ensureProfile(u).catch((e) => console.error("ensureProfile", e));
+        }
       }),
     [],
   );
