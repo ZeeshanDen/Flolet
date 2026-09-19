@@ -8,7 +8,13 @@ import { parseISO, subDays, format } from "date-fns";
 import { runOutDate, daysLeft, remainingUnits } from "./medsCalc";
 import type { Medicine, MedSlot } from "../../lib/types";
 
-const ENABLED_KEY = "flowlet-reminders-enabled";
+const REFILL_KEY = "flowlet-reminders-refill";
+const DOSE_KEY = "flowlet-reminders-dose";
+
+export interface ReminderPrefs {
+  refill: boolean;
+  dose: boolean;
+}
 
 export const SLOT_TIMES: Record<MedSlot, { hour: number; minute: number }> = {
   morning: { hour: 8, minute: 0 },
@@ -29,17 +35,23 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function remindersEnabled(): Promise<boolean> {
+export async function getReminderPrefs(): Promise<ReminderPrefs> {
   try {
-    return (await AsyncStorage.getItem(ENABLED_KEY)) === "1";
+    const [refill, dose] = await Promise.all([
+      AsyncStorage.getItem(REFILL_KEY),
+      AsyncStorage.getItem(DOSE_KEY),
+    ]);
+    return { refill: refill === "1", dose: dose === "1" };
   } catch {
-    return false;
+    return { refill: false, dose: false };
   }
 }
 
-export async function setRemindersEnabled(on: boolean): Promise<void> {
-  await AsyncStorage.setItem(ENABLED_KEY, on ? "1" : "0");
-  if (!on) await Notifications.cancelAllScheduledNotificationsAsync();
+export async function setReminderPrefs(prefs: ReminderPrefs): Promise<void> {
+  await AsyncStorage.setItem(REFILL_KEY, prefs.refill ? "1" : "0");
+  await AsyncStorage.setItem(DOSE_KEY, prefs.dose ? "1" : "0");
+  if (!prefs.refill && !prefs.dose)
+    await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 export async function requestPermission(): Promise<boolean> {
@@ -49,25 +61,30 @@ export async function requestPermission(): Promise<boolean> {
   return req.granted;
 }
 
-/** Wipe + reschedule everything from the given medicines. */
-export async function rescheduleAll(medicines: Medicine[]): Promise<number> {
+/** Wipe + reschedule from the given medicines, honoring the prefs. */
+export async function rescheduleAll(
+  medicines: Medicine[],
+  prefs: ReminderPrefs,
+): Promise<number> {
   await Notifications.cancelAllScheduledNotificationsAsync();
   let count = 0;
 
   // Group dose reminders by slot so 4 medicines ≠ 4 separate 9pm pings.
   const bySlot = new Map<MedSlot, string[]>();
   const byWeekday = new Map<number, string[]>();
-  for (const m of medicines) {
-    if (remainingUnits(m) <= 0) continue; // out of stock → only refill nag
-    if (m.schedule.type === "daily") {
-      for (const s of m.schedule.slots) {
-        bySlot.set(s, [...(bySlot.get(s) ?? []), m.name]);
+  if (prefs.dose) {
+    for (const m of medicines) {
+      if (remainingUnits(m) <= 0) continue; // out of stock → only refill nag
+      if (m.schedule.type === "daily") {
+        for (const s of m.schedule.slots) {
+          bySlot.set(s, [...(bySlot.get(s) ?? []), m.name]);
+        }
+      } else {
+        byWeekday.set(m.schedule.weekday, [
+          ...(byWeekday.get(m.schedule.weekday) ?? []),
+          m.name,
+        ]);
       }
-    } else {
-      byWeekday.set(m.schedule.weekday, [
-        ...(byWeekday.get(m.schedule.weekday) ?? []),
-        m.name,
-      ]);
     }
   }
 
@@ -103,7 +120,8 @@ export async function rescheduleAll(medicines: Medicine[]): Promise<number> {
 
   // Refill warnings: one dated ping per medicine, 5 days before run-out.
   const now = new Date();
-  for (const m of medicines) {
+  const refillList = prefs.refill ? medicines : [];
+  for (const m of refillList) {
     const out = runOutDate(m);
     const warnAt = subDays(parseISO(out), REFILL_WARN_DAYS);
     warnAt.setHours(REFILL_TIME.hour, REFILL_TIME.minute, 0, 0);

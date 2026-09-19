@@ -22,10 +22,11 @@ import {
   WEEKDAYS,
 } from "../features/meds/medsCalc";
 import {
-  remindersEnabled,
-  setRemindersEnabled,
+  getReminderPrefs,
+  setReminderPrefs,
   requestPermission,
   rescheduleAll,
+  type ReminderPrefs,
 } from "../features/meds/reminders";
 import { C } from "../lib/theme";
 import type { Medicine, MedSlot } from "../lib/types";
@@ -372,20 +373,23 @@ export default function MedsScreen() {
   const [filter, setFilter] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Medicine | null>(null);
-  const [reminders, setReminders] = useState(false);
+  const [prefs, setPrefs] = useState<ReminderPrefs>({
+    refill: false,
+    dose: false,
+  });
   const [scheduled, setScheduled] = useState<number | null>(null);
 
   useEffect(() => {
-    remindersEnabled().then(setReminders);
+    getReminderPrefs().then(setPrefs);
   }, []);
 
-  // Reschedule whenever data changes while reminders are on.
+  // Reschedule whenever data or prefs change while anything is on.
   useEffect(() => {
-    if (!reminders || medicines.length === 0) return;
-    rescheduleAll(medicines).then(setScheduled).catch(console.error);
-  }, [reminders, medicines]);
+    if ((!prefs.refill && !prefs.dose) || medicines.length === 0) return;
+    rescheduleAll(medicines, prefs).then(setScheduled).catch(console.error);
+  }, [prefs, medicines]);
 
-  const toggleReminders = async (on: boolean) => {
+  const togglePref = async (key: keyof ReminderPrefs, on: boolean) => {
     if (on) {
       const ok = await requestPermission();
       if (!ok) {
@@ -396,9 +400,12 @@ export default function MedsScreen() {
         return;
       }
     }
-    setReminders(on);
-    await setRemindersEnabled(on);
-    if (on && medicines.length) setScheduled(await rescheduleAll(medicines));
+    const next = { ...prefs, [key]: on };
+    setPrefs(next);
+    await setReminderPrefs(next);
+    if ((next.refill || next.dose) && medicines.length)
+      setScheduled(await rescheduleAll(medicines, next));
+    else setScheduled(0);
   };
 
   const personById = useMemo(
@@ -444,32 +451,56 @@ export default function MedsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Reminders toggle — the native win */}
+        {/* Reminder toggles — the native win */}
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
             backgroundColor: C.card,
             borderColor: C.border,
             borderWidth: 1,
             borderRadius: 14,
             padding: 12,
             marginBottom: 14,
+            gap: 10,
           }}
         >
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: C.text, fontWeight: "700" }}>Dose & refill reminders</Text>
-            <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>
-              {reminders
-                ? `On — ${scheduled ?? "…"} notification${scheduled === 1 ? "" : "s"} scheduled`
-                : "Morning 8:00 · Afternoon 13:00 · Evening 18:00 · Night 21:00"}
-            </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: C.text, fontWeight: "700" }}>
+                Refill alerts
+              </Text>
+              <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>
+                Ping at 10:00, five days before a medicine runs out
+              </Text>
+            </View>
+            <Switch
+              value={prefs.refill}
+              onValueChange={(v) => togglePref("refill", v)}
+              trackColor={{ true: C.brand, false: C.border }}
+            />
           </View>
-          <Switch
-            value={reminders}
-            onValueChange={toggleReminders}
-            trackColor={{ true: C.brand, false: C.border }}
+          <View
+            style={{ height: 1, backgroundColor: C.border, marginVertical: 2 }}
           />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: C.text, fontWeight: "700" }}>
+                Dose reminders
+              </Text>
+              <Text style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>
+                8:00 · 13:00 · 18:00 · 21:00 — for whoever takes them
+              </Text>
+            </View>
+            <Switch
+              value={prefs.dose}
+              onValueChange={(v) => togglePref("dose", v)}
+              trackColor={{ true: C.brand, false: C.border }}
+            />
+          </View>
+          {(prefs.refill || prefs.dose) && (
+            <Text style={{ color: C.muted, fontSize: 11 }}>
+              {scheduled ?? "…"} notification{scheduled === 1 ? "" : "s"} scheduled
+            </Text>
+          )}
         </View>
 
         {persons.length > 0 && (
