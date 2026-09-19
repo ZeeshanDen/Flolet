@@ -7,6 +7,18 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavyweight vendors so the PWA parses less on launch and
+        // keeps stable chunks cached across app-code deploys.
+        manualChunks: {
+          firebase: ["firebase/app", "firebase/auth", "firebase/firestore"],
+          charts: ["recharts"],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
