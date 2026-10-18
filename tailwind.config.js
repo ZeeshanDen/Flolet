@@ -11,16 +11,26 @@ export default {
         border: "rgb(var(--border) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",
         text: "rgb(var(--text) / <alpha-value>)",
-        // Violet accent. brand-soft flips darker in light theme for contrast.
+        raised: "rgb(var(--raised) / <alpha-value>)",
+        // brand = primary action fill (black in light, mint in dark);
+        // on-brand = text on it; brand-soft = accent text / highlights.
         brand: {
-          DEFAULT: "#8b5cf6",
+          DEFAULT: "rgb(var(--brand) / <alpha-value>)",
           soft: "rgb(var(--brand-soft) / <alpha-value>)",
         },
-        good: "#10b981",
-        bad: "#f43f5e",
+        "on-brand": "rgb(var(--on-brand) / <alpha-value>)",
+        good: "#16a34a",
+        bad: "#e5484d",
+        warn: "#d97706",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        sans: [
+          "Geist Variable",
+          "Geist",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
       },
       borderRadius: {
         xl: "1rem",

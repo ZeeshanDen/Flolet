@@ -44,7 +44,7 @@ function FriendsList() {
             to={`/friends/${f.uid}`}
             className="flex items-center gap-3 rounded-xl bg-card px-3 py-3"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-base font-bold text-white">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-base font-bold text-on-brand">
               {f.name.charAt(0).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
@@ -132,7 +132,7 @@ export default function GroupsScreen() {
             onClick={() => setParams(t === "friends" ? { tab: t } : {})}
             className={cn(
               "flex-1 rounded-lg py-2 text-sm font-medium capitalize transition",
-              tab === t ? "bg-brand text-white" : "text-muted",
+              tab === t ? "bg-brand text-on-brand" : "text-muted",
             )}
           >
             {t}

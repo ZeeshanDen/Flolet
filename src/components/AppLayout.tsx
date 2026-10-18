@@ -29,7 +29,7 @@ export default function AppLayout() {
             className={({ isActive }) =>
               cn(
                 "flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition",
-                isActive ? "text-brand-soft" : "text-muted",
+                isActive ? "text-brand" : "text-muted",
               )
             }
           >

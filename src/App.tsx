@@ -33,7 +33,7 @@ function Splash() {
       aria-label="Loading"
     >
       <div className="flex h-[72px] w-[72px] animate-[splashPulse_1.6s_ease-in-out_infinite] items-center justify-center rounded-[20px] bg-brand">
-        <Wallet size={40} className="text-white" />
+        <Wallet size={40} className="text-on-brand" />
       </div>
       <div className="text-xl font-bold tracking-tight">Flowlet</div>
     </div>

@@ -150,7 +150,7 @@ export default function SetupVaultSheet({
               type="checkbox"
               checked={saved}
               onChange={(e) => setSaved(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[#8b5cf6]"
+              className="mt-0.5 h-4 w-4 accent-[rgb(var(--brand))]"
             />
             <span>
               I've saved my recovery code somewhere safe. I understand it can't

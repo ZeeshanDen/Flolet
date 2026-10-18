@@ -209,7 +209,7 @@ export default function MedicineSheet({
               onClick={() => doRefill(parseFloat(refill) || 0)}
               disabled={!(parseFloat(refill) > 0)}
               aria-label="Refill custom amount"
-              className="rounded-xl bg-brand px-3 text-white disabled:bg-border disabled:text-muted"
+              className="rounded-xl bg-brand px-3 text-on-brand disabled:bg-border disabled:text-muted"
             >
               <Plus size={16} />
             </button>
@@ -250,7 +250,7 @@ export default function MedicineSheet({
               className={cn(
                 "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
                 personId === p.id
-                  ? "bg-brand text-white"
+                  ? "bg-brand text-on-brand"
                   : "border border-border bg-surface text-muted",
               )}
             >
@@ -312,7 +312,7 @@ export default function MedicineSheet({
             onClick={() => setSchedType(t)}
             className={cn(
               "flex-1 rounded-lg py-2 text-sm font-medium capitalize transition",
-              schedType === t ? "bg-brand text-white" : "text-muted",
+              schedType === t ? "bg-brand text-on-brand" : "text-muted",
             )}
           >
             {t === "daily" ? "Every day" : "Weekly"}
@@ -349,7 +349,7 @@ export default function MedicineSheet({
               className={cn(
                 "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
                 weekday === i
-                  ? "bg-brand text-white"
+                  ? "bg-brand text-on-brand"
                   : "border border-border bg-surface text-muted",
               )}
             >

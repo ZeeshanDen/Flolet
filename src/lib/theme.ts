@@ -8,7 +8,7 @@ function apply(t: Theme) {
   // Keep browser/OS chrome in sync with the app theme.
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", t === "light" ? "#f9fafb" : "#0a0a0b");
+    ?.setAttribute("content", t === "light" ? "#f2f3f6" : "#0e0f11");
 }
 
 function initialTheme(): Theme {

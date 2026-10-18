@@ -54,7 +54,7 @@ export default function ProfileScreen() {
       <h1 className="mb-4 text-xl font-bold">Profile</h1>
 
       <div className="mb-4 flex items-center gap-3">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand text-2xl font-bold text-white">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand text-2xl font-bold text-on-brand">
           {initial}
         </span>
         <div className="min-w-0">
@@ -130,7 +130,7 @@ export default function ProfileScreen() {
                 className={cn(
                   "flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition",
                   theme === key
-                    ? "bg-brand text-white"
+                    ? "bg-brand text-on-brand"
                     : "text-muted",
                 )}
               >

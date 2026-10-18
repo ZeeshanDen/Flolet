@@ -98,7 +98,7 @@ export default function InsightsScreen() {
             onClick={() => setView(v)}
             className={cn(
               "flex-1 rounded-xl py-2 text-sm font-medium capitalize transition",
-              view === v ? "bg-brand text-white" : "bg-card text-muted",
+              view === v ? "bg-brand text-on-brand" : "bg-card text-muted",
             )}
           >
             {v === "month" ? "Monthly" : "Yearly"}
@@ -221,7 +221,7 @@ export default function InsightsScreen() {
                     contentStyle={tooltipStyle}
                     itemStyle={tooltipItemStyle}
                   />
-                  <Bar dataKey="total" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="total" fill="rgb(var(--brand-soft))" radius={[6, 6, 2, 2]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

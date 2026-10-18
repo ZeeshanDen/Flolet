@@ -70,7 +70,7 @@ const DEMO_CATS = [
 
 function PhoneMock() {
   return (
-    <div className="relative mx-auto w-[290px] rounded-[38px] border-[8px] border-[#14141a] bg-bg p-4 shadow-[0_40px_90px_-30px_rgba(139,92,246,0.55)]">
+    <div className="relative mx-auto w-[290px] rounded-[38px] border-[8px] border-[#14141a] bg-bg p-4 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.45)]">
       <div className="mb-3 flex items-center justify-between px-1">
         <span className="text-sm font-extrabold">New expense</span>
         <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] text-muted">
@@ -79,7 +79,7 @@ function PhoneMock() {
       </div>
 
       {/* amount card */}
-      <div className="flex items-center justify-between rounded-2xl border border-white/15 bg-gradient-to-br from-[#2a2545] to-brand px-4 py-3.5 shadow-[0_12px_26px_-10px_rgba(139,92,246,0.6)]">
+      <div className="flex items-center justify-between hero-card px-4 py-3.5">
         <div>
           <div className="text-[9px] font-semibold uppercase tracking-widest text-white/70">
             Amount
@@ -137,7 +137,7 @@ function PhoneMock() {
         </div>
       </div>
 
-      <div className="mt-3 flex h-10 items-center justify-center gap-2 rounded-xl bg-brand text-sm font-bold text-white">
+      <div className="mt-3 flex h-10 items-center justify-center gap-2 rounded-xl bg-brand text-sm font-bold text-on-brand">
         Save
       </div>
     </div>
@@ -149,13 +149,12 @@ export default function LandingPage() {
     <div className="h-full overflow-y-auto">
       <div className="safe-top relative mx-auto max-w-5xl px-6 pb-20">
         {/* glow */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(139,92,246,0.28),transparent_65%)]" />
 
         {/* nav */}
         <nav className="relative flex items-center justify-between py-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand">
-              <Wallet size={19} className="text-white" />
+              <Wallet size={19} className="text-on-brand" />
             </span>
             <span className="text-lg font-extrabold tracking-tight">
               Flowlet
@@ -190,7 +189,7 @@ export default function LandingPage() {
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 to="/auth?mode=up"
-                className="flex items-center gap-2 rounded-2xl bg-brand px-6 py-3.5 font-bold text-white shadow-[0_14px_30px_-10px_rgba(139,92,246,0.7)] transition hover:bg-brand-soft"
+                className="flex items-center gap-2 rounded-full bg-brand px-6 py-3.5 font-bold text-on-brand transition hover:opacity-90"
               >
                 Get started free
                 <ArrowRight size={18} />
@@ -208,7 +207,6 @@ export default function LandingPage() {
           </div>
 
           <div className="relative">
-            <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_50%,rgba(139,92,246,0.25),transparent_70%)]" />
             <PhoneMock />
           </div>
         </header>
@@ -226,9 +224,9 @@ export default function LandingPage() {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="group rounded-3xl border border-border bg-surface/60 p-6 backdrop-blur transition hover:border-brand/50 hover:shadow-[0_20px_50px_-25px_rgba(139,92,246,0.5)]"
+                className="group rounded-3xl border border-border bg-surface/60 p-6 backdrop-blur transition hover:border-brand/50"
               >
-                <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/12 text-brand-soft">
+                <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-brand/12 text-brand-soft">
                   <f.icon size={22} />
                 </span>
                 <h3 className="text-lg font-bold">{f.title}</h3>
@@ -240,7 +238,6 @@ export default function LandingPage() {
 
         {/* privacy */}
         <section className="relative mt-24 overflow-hidden rounded-[32px] border border-brand/25 bg-gradient-to-b from-brand/10 to-transparent p-8 md:p-12">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(70%_100%_at_50%_0%,rgba(139,92,246,0.18),transparent)]" />
           <div className="relative">
             <p className="mb-4 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
               <span className="h-px w-8 bg-brand/50" />
@@ -279,7 +276,7 @@ export default function LandingPage() {
           </p>
           <Link
             to="/auth?mode=up"
-            className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-brand px-8 py-4 text-lg font-bold text-white shadow-[0_14px_30px_-10px_rgba(139,92,246,0.7)] transition hover:bg-brand-soft"
+            className="mt-7 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-lg font-bold text-on-brand transition hover:opacity-90"
           >
             Start tracking free
             <ArrowRight size={20} />
@@ -290,7 +287,7 @@ export default function LandingPage() {
         <footer className="mt-20 flex flex-col items-center gap-2 border-t border-border pt-8 text-sm text-muted">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand">
-              <Wallet size={13} className="text-white" />
+              <Wallet size={13} className="text-on-brand" />
             </span>
             <span className="font-bold text-text">Flowlet</span>
           </div>

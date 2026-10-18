@@ -198,7 +198,7 @@ export default function MedsScreen() {
             className={cn(
               "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
               filter === null
-                ? "bg-brand text-white"
+                ? "bg-brand text-on-brand"
                 : "border border-border bg-surface text-muted",
             )}
           >
@@ -211,7 +211,7 @@ export default function MedsScreen() {
               className={cn(
                 "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
                 filter === p.id
-                  ? "bg-brand text-white"
+                  ? "bg-brand text-on-brand"
                   : "border border-border bg-surface text-muted",
               )}
             >

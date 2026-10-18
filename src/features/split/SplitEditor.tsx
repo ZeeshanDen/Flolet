@@ -102,7 +102,7 @@ export default function SplitEditor({
               className={cn(
                 "shrink-0 rounded-xl px-4 py-2 text-sm font-semibold tabular-nums transition",
                 state.type === t.key
-                  ? "bg-brand text-white"
+                  ? "bg-brand text-on-brand"
                   : "bg-card text-muted",
               )}
             >

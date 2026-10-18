@@ -37,7 +37,7 @@ export default function UnlockVault() {
     <div className="safe-top mx-auto flex h-full max-w-md flex-col justify-center px-6">
       <div className="mb-6 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand">
-          <Lock size={32} className="text-white" />
+          <Lock size={32} className="text-on-brand" />
         </div>
         <h1 className="text-2xl font-bold">Unlock your data</h1>
         <p className="mt-2 text-muted">

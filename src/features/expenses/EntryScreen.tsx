@@ -196,35 +196,41 @@ export default function EntryScreen() {
       </div>
 
       {/* Amount card — tap to raise keypad; Split pill inside */}
-      <div className="mt-3.5 flex h-[77px] shrink-0 items-center justify-between rounded-[22px] border border-white/15 bg-gradient-to-br from-[#2a2545] to-brand px-5 shadow-[0_14px_30px_-12px_rgba(139,92,246,0.6)]">
-        <button onClick={() => setKeypadOpen(true)} className="flex-1 text-left">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-white/70">
-            {amount ? "Amount" : "Tap to enter amount"}
+      <div className="hero-card mt-3.5 flex shrink-0 flex-col px-5 pb-4 pt-[18px]">
+        <button onClick={() => setKeypadOpen(true)} className="text-left">
+          <div className="text-[12px] font-medium text-[rgb(var(--hero-muted))]">
+            {amount ? "New expense" : "Tap to enter amount"}
           </div>
-          <div className="mt-0.5 flex min-w-0 items-baseline gap-1.5">
-            <span className="text-xl font-bold text-white/85">
+          <div className="mt-1 flex min-w-0 items-baseline gap-1">
+            <span className="text-[22px] font-semibold text-[rgb(var(--hero-muted))]">
               {currencySymbol(currency)}
             </span>
             <span
               className={cn(
-                "min-w-0 truncate font-extrabold leading-none tracking-tight text-white",
-                amount.length > 9 ? "text-2xl" : "text-4xl",
+                "min-w-0 truncate font-bold leading-none tracking-[-0.035em] tabular-nums",
+                amount.length > 9 ? "text-[30px]" : "text-[42px]",
               )}
             >
               {amount || "0"}
             </span>
           </div>
         </button>
+        <div className="mt-3.5 flex gap-2">
         <button
           onClick={() => setSplitOpen(true)}
           className={cn(
-            "flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white transition",
-            splitActive ? "bg-white/30" : "bg-white/15",
+            "hero-chip flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold transition",
+            splitActive && "ring-1 ring-[rgb(var(--hero-fg))]",
           )}
         >
-          <Users size={16} />
+          <Users size={14} />
           {splitActive ? "Split on" : "Split"}
         </button>
+        <span className="hero-chip flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold">
+          <Calendar size={14} />
+          {date === today() ? "Today" : date}
+        </span>
+        </div>
       </div>
 
       {/* Category */}
@@ -317,7 +323,7 @@ export default function EntryScreen() {
             saved
               ? "bg-good text-white"
               : canSave
-                ? "bg-brand text-white"
+                ? "bg-brand text-on-brand"
                 : "bg-border text-muted",
           )}
         >
@@ -356,7 +362,7 @@ export default function EntryScreen() {
           onClick={() => setKeypadOpen(false)}
           className={cn(
             "mt-3 flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-base font-bold transition",
-            numeric > 0 ? "bg-brand text-white" : "bg-border text-muted",
+            numeric > 0 ? "bg-brand text-on-brand" : "bg-border text-muted",
           )}
         >
           {numeric > 0 ? "Done" : "Enter amount"}
@@ -429,7 +435,7 @@ export default function EntryScreen() {
                   className={cn(
                     "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition",
                     g.id === groupId
-                      ? "bg-brand text-white"
+                      ? "bg-brand text-on-brand"
                       : "border border-border bg-surface text-muted",
                   )}
                 >

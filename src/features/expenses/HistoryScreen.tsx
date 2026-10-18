@@ -105,7 +105,7 @@ export default function HistoryScreen() {
             onClick={() => setMode(t.key)}
             className={cn(
               "flex-1 rounded-lg py-2 text-sm font-medium transition",
-              mode === t.key ? "bg-brand text-white" : "text-muted",
+              mode === t.key ? "bg-brand text-on-brand" : "text-muted",
             )}
           >
             {t.label}

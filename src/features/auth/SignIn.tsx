@@ -74,7 +74,7 @@ export default function SignIn() {
       </Link>
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand">
-          <Wallet size={32} className="text-white" />
+          <Wallet size={32} className="text-on-brand" />
         </div>
         <h1 className="text-2xl font-bold">Flowlet</h1>
         <p className="text-muted">Track spending. Split with anyone.</p>
