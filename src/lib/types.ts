@@ -64,6 +64,8 @@ export interface GroupExpense {
   splitType: SplitType;
   splitInput: Record<string, number>; // raw per-member input
   shares: Record<string, number>; // resolved owed per member (sums to amount)
+  /** Equal split among a subset — who was ticked in the editor. */
+  included?: string[];
   createdBy: string;
 }
 

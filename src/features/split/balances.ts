@@ -73,3 +73,44 @@ export function simplifyDebts(balances: Balance[]): Debt[] {
   }
   return debts;
 }
+
+/**
+ * Your effect from one shared expense, in cents: positive = you lent
+ * (others owe you), negative = you borrowed, 0 = not involved / even.
+ */
+export function myEffectCents(me: string, e: GroupExpense): number {
+  const myShare = toCents(e.shares[me] ?? 0);
+  if (e.paidBy === me) return toCents(e.amount) - myShare;
+  return myShare === 0 ? 0 : -myShare; // avoid -0 ("−₹0" in the UI)
+}
+
+/**
+ * Net between two people from their shared expenses + direct settlements,
+ * Splitwise-style (pairwise, not group-simplified). Positive = `other`
+ * owes `me`. Expenses paid by a third person don't move this pair.
+ */
+export function pairwiseNet(
+  me: string,
+  other: string,
+  expenses: GroupExpense[],
+  settlements: Settlement[],
+): number {
+  let c = 0;
+  for (const e of expenses) {
+    if (e.paidBy === me) c += toCents(e.shares[other] ?? 0);
+    else if (e.paidBy === other) c -= toCents(e.shares[me] ?? 0);
+  }
+  for (const s of settlements) {
+    if (s.fromUid === other && s.toUid === me) c -= toCents(s.amount);
+    else if (s.fromUid === me && s.toUid === other) c += toCents(s.amount);
+  }
+  return fromCents(c);
+}
+
+/** True when an expense touches both people (one paid, the other owes). */
+export function involvesPair(me: string, other: string, e: GroupExpense) {
+  return (
+    (e.paidBy === me && (e.shares[other] ?? 0) > 0) ||
+    (e.paidBy === other && (e.shares[me] ?? 0) > 0)
+  );
+}

@@ -1,11 +1,84 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, Users, Mail, Check, ArrowLeft } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import {
+  Plus,
+  Users,
+  Mail,
+  Check,
+  ArrowLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useGroups } from "@/features/groups/useGroups";
-import { CURRENCIES, currencySymbol } from "@/lib/utils";
+import { useAllActivity } from "@/features/groups/useAllActivity";
+import { buildFriends } from "@/features/groups/friends";
+import { CURRENCIES, currencySymbol, formatMoney, cn } from "@/lib/utils";
+
+function FriendsList() {
+  const { user } = useAuth();
+  const { groups, loading } = useGroups();
+  const { expenses, settlements } = useAllActivity(groups);
+  const friends = useMemo(
+    () => buildFriends(user?.uid ?? "", groups, expenses, settlements),
+    [user?.uid, groups, expenses, settlements],
+  );
+
+  if (loading)
+    return <p className="mt-10 text-center text-muted">Loading…</p>;
+  if (friends.length === 0)
+    return (
+      <p className="mt-10 text-center text-muted">
+        No friends yet — invite someone to a group and they'll show up here.
+      </p>
+    );
+
+  return (
+    <div className="space-y-2">
+      {friends.map((f) => {
+        const owing = Object.entries(f.netByCurrency).filter(
+          ([, v]) => Math.abs(v) >= 0.01,
+        );
+        return (
+          <Link
+            key={f.uid}
+            to={`/friends/${f.uid}`}
+            className="flex items-center gap-3 rounded-xl bg-card px-3 py-3"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-base font-bold text-white">
+              {f.name.charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{f.name}</p>
+              {owing.length === 0 ? (
+                <p className="text-xs text-muted">settled up</p>
+              ) : (
+                owing.map(([cur, v]) => (
+                  <p
+                    key={cur}
+                    className={cn(
+                      "text-xs font-semibold",
+                      v > 0 ? "text-good" : "text-[#f97316]",
+                    )}
+                  >
+                    {v > 0
+                      ? `owes you ${formatMoney(v, cur)}`
+                      : `you owe ${formatMoney(-v, cur)}`}
+                  </p>
+                ))
+              )}
+            </div>
+            <ChevronRight size={16} className="shrink-0 text-muted" />
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function GroupsScreen() {
   const { groups, invites, loading, createGroup, acceptInvite } = useGroups();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "friends" ? "friends" : "groups";
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("INR");
@@ -39,17 +112,38 @@ export default function GroupsScreen() {
           <Link to="/profile" aria-label="Back to profile" className="text-muted">
             <ArrowLeft />
           </Link>
-          <h1 className="text-xl font-bold">Groups</h1>
+          <h1 className="text-xl font-bold">Splits</h1>
         </div>
-        <button
-          onClick={() => setCreating((v) => !v)}
-          className="btn-brand px-3 py-2"
-        >
-          <Plus size={18} />
-          New
-        </button>
+        {tab === "groups" && (
+          <button
+            onClick={() => setCreating((v) => !v)}
+            className="btn-brand px-3 py-2"
+          >
+            <Plus size={18} />
+            New
+          </button>
+        )}
       </div>
 
+      <div className="mb-4 flex gap-2 rounded-xl bg-surface p-1">
+        {(["groups", "friends"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setParams(t === "friends" ? { tab: t } : {})}
+            className={cn(
+              "flex-1 rounded-lg py-2 text-sm font-medium capitalize transition",
+              tab === t ? "bg-brand text-white" : "text-muted",
+            )}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {tab === "friends" && <FriendsList />}
+
+      {tab === "groups" && (
+      <>
       {creating && (
         <div className="card mb-4 space-y-3">
           <input
@@ -131,6 +225,8 @@ export default function GroupsScreen() {
             </Link>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   );

@@ -1,36 +1,33 @@
 import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, UserPlus, ArrowRight, Trash2, HandCoins } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { useGroup } from "@/features/groups/useGroup";
+import { ArrowLeft, UserPlus, ArrowRight, HandCoins } from "lucide-react";
+import { format } from "date-fns";
+import { useAuth } from "@/features/auth/AuthContext";
+import { useGroup, deleteSettlementDoc } from "@/features/groups/useGroup";
 import { useGroups } from "@/features/groups/useGroups";
+import ActivityList, {
+  sortActivity,
+  type ActivityItem,
+} from "@/features/groups/ActivityList";
+import GroupExpenseSheet from "@/features/groups/GroupExpenseSheet";
 import { computeBalances, simplifyDebts } from "@/features/split/balances";
 import { formatMoney, cn } from "@/lib/utils";
+import type { GroupExpense } from "@/lib/types";
 
 // Local date, not UTC — toISOString() would date a 1am IST payment yesterday.
 const today = () => format(new Date(), "yyyy-MM-dd");
 
-function safeDay(iso: string): string {
-  const d = parseISO(iso);
-  return isNaN(d.getTime()) ? "" : format(d, "d MMM");
-}
-
 export default function GroupDetailScreen() {
   const { groupId } = useParams();
-  const {
-    group,
-    expenses,
-    settlements,
-    loading,
-    addSettlement,
-    deleteGroupExpense,
-  } = useGroup(groupId);
+  const { user } = useAuth();
+  const { group, expenses, settlements, loading, addSettlement } =
+    useGroup(groupId);
   const { inviteToGroup } = useGroups();
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSent, setInviteSent] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<GroupExpense | null>(null);
 
   const memberUids = group?.memberUids ?? [];
   const balances = useMemo(
@@ -160,61 +157,37 @@ export default function GroupDetailScreen() {
         )}
       </div>
 
-      {/* Expenses */}
-      <p className="mb-2 text-sm text-muted">Shared expenses</p>
-      {expenses.length === 0 ? (
+      {/* Activity: expenses + settlements, newest first */}
+      <p className="mb-2 text-sm text-muted">Activity</p>
+      {expenses.length === 0 && settlements.length === 0 ? (
         <p className="text-center text-muted">
           No shared expenses yet. Add one from the Add tab with Split on.
         </p>
       ) : (
-        <div className="space-y-2">
-          {expenses.map((e) => (
-            <div
-              key={e.id}
-              className="flex items-center gap-3 rounded-xl bg-card px-3 py-2"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{e.name || "Expense"}</p>
-                <p className="text-xs text-muted">
-                  {nameOf(e.paidBy)} paid · {safeDay(e.date)}
-                </p>
-              </div>
-              <span className="font-semibold tabular-nums">
-                {formatMoney(e.amount, group.currency)}
-              </span>
-              {confirmDeleteId === e.id ? (
-                <span className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      deleteGroupExpense(e.id).catch((err) =>
-                        console.error("delete group expense", err),
-                      );
-                      setConfirmDeleteId(null);
-                    }}
-                    className="rounded-lg bg-bad px-2 py-1 text-xs font-semibold text-white"
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(null)}
-                    className="rounded-lg bg-surface px-2 py-1 text-xs font-semibold text-muted"
-                  >
-                    Cancel
-                  </button>
-                </span>
-              ) : (
-                <button
-                  onClick={() => setConfirmDeleteId(e.id)}
-                  className="flex h-9 w-9 items-center justify-center text-muted hover:text-bad"
-                  aria-label="Delete expense"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <ActivityList
+          me={user?.uid ?? ""}
+          items={sortActivity([
+            ...expenses.map(
+              (e) => ({ kind: "expense", group, e }) as ActivityItem,
+            ),
+            ...settlements.map(
+              (s) => ({ kind: "settlement", group, s }) as ActivityItem,
+            ),
+          ])}
+          onEdit={(_, e) => setEditing(e)}
+          onDeleteSettlement={(g, s) =>
+            deleteSettlementDoc(g.id, s.id).catch((err) =>
+              console.error("delete settlement", err),
+            )
+          }
+        />
       )}
+
+      <GroupExpenseSheet
+        group={group}
+        expense={editing}
+        onClose={() => setEditing(null)}
+      />
     </div>
   );
 }

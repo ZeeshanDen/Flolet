@@ -146,6 +146,12 @@ export default function EntryScreen() {
           splitType: split.type,
           splitInput: split.input,
           shares,
+          included:
+            split.type === "equal" &&
+            split.included &&
+            split.included.length < selectedGroup.memberUids.length
+              ? split.included
+              : undefined,
           createdBy: user!.uid,
         });
       } else {

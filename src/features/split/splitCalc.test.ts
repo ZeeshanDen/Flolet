@@ -177,3 +177,50 @@ describe("computeBalances + simplifyDebts", () => {
     expect(debts.every((d) => d.toUid === "a")).toBe(true);
   });
 });
+
+import {
+  myEffectCents,
+  pairwiseNet,
+  involvesPair,
+} from "./balances";
+
+describe("pairwise / friend balances", () => {
+  const mk = (
+    id: string,
+    amount: number,
+    paidBy: string,
+    shares: Record<string, number>,
+  ): GroupExpense => ({
+    id,
+    amount,
+    categoryId: "c",
+    date: "2026-01-01",
+    createdAt: 0,
+    paidBy,
+    splitType: "equal",
+    splitInput: {},
+    shares,
+    createdBy: paidBy,
+  });
+
+  it("my effect: lent when I paid, borrowed when someone else did", () => {
+    const e = mk("1", 25, "me", { me: 12.5, neha: 12.5 });
+    expect(myEffectCents("me", e)).toBe(1250); // Neha owes me 12.50
+    expect(myEffectCents("neha", e)).toBe(-1250);
+    expect(myEffectCents("x", e)).toBe(0); // not involved
+  });
+
+  it("pairwise net nets expenses both ways and settlements", () => {
+    const exps = [
+      mk("1", 25, "me", { me: 12.5, neha: 12.5 }), // neha owes me 12.5
+      mk("2", 40, "neha", { me: 20, neha: 20 }), // I owe neha 20
+      mk("3", 90, "rahul", { me: 30, neha: 30, rahul: 30 }), // third party
+    ];
+    expect(pairwiseNet("me", "neha", exps, [])).toBe(-7.5);
+    const settle = [
+      { id: "s", fromUid: "me", toUid: "neha", amount: 7.5, date: "x", createdAt: 0 },
+    ];
+    expect(pairwiseNet("me", "neha", exps, settle)).toBe(0);
+    expect(involvesPair("me", "neha", exps[2])).toBe(false);
+  });
+});

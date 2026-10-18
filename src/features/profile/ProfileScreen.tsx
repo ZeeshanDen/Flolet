@@ -151,7 +151,7 @@ export default function ProfileScreen() {
           <p className="text-sm text-muted">
             {groups.length === 0
               ? "Create a group, invite people, settle up"
-              : `${groups.length} group${groups.length === 1 ? "" : "s"} · balances & invites`}
+              : `${groups.length} group${groups.length === 1 ? "" : "s"} · friends, history & balances`}
           </p>
         </div>
         <ChevronRight size={18} className="shrink-0 text-muted" />

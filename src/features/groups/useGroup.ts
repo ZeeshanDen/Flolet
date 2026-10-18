@@ -6,10 +6,19 @@ import {
   query,
   orderBy,
   addDoc,
+  updateDoc,
   deleteDoc,
+  deleteField,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Group, GroupExpense, Settlement } from "@/lib/types";
+
+/** Firestore rejects undefined — drop absent optional fields. */
+function clean<T extends object>(o: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== undefined),
+  ) as Partial<T>;
+}
 
 /** Standalone writer used by the entry screen (outside a group route). */
 export async function writeGroupExpense(
@@ -17,9 +26,30 @@ export async function writeGroupExpense(
   e: Omit<GroupExpense, "id" | "createdAt">,
 ) {
   await addDoc(collection(db, "groups", groupId, "expenses"), {
-    ...e,
+    ...clean(e),
     createdAt: Date.now(),
   });
+}
+
+/** Edit an existing shared expense (amount, split, payer, …). */
+export async function updateGroupExpense(
+  groupId: string,
+  id: string,
+  patch: Omit<GroupExpense, "id" | "createdAt" | "createdBy">,
+) {
+  await updateDoc(doc(db, "groups", groupId, "expenses", id), {
+    ...clean(patch),
+    // Clearing "included" (back to everyone) must remove the stored field.
+    ...(patch.included === undefined ? { included: deleteField() } : {}),
+  });
+}
+
+export async function deleteGroupExpenseDoc(groupId: string, id: string) {
+  await deleteDoc(doc(db, "groups", groupId, "expenses", id));
+}
+
+export async function deleteSettlementDoc(groupId: string, id: string) {
+  await deleteDoc(doc(db, "groups", groupId, "settlements", id));
 }
 
 export function useGroup(groupId: string | undefined) {

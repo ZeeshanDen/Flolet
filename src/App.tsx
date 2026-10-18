@@ -19,6 +19,9 @@ const GroupsScreen = lazy(() => import("@/features/groups/GroupsScreen"));
 const GroupDetailScreen = lazy(
   () => import("@/features/groups/GroupDetailScreen"),
 );
+const FriendDetailScreen = lazy(
+  () => import("@/features/groups/FriendDetailScreen"),
+);
 const LandingPage = lazy(() => import("@/features/marketing/LandingPage"));
 
 // Mirrors the static #splash in index.html so launch feels like one screen.
@@ -72,6 +75,7 @@ export default function App() {
           <Route path="/meds" element={<MedsScreen />} />
           <Route path="/groups" element={<GroupsScreen />} />
           <Route path="/groups/:groupId" element={<GroupDetailScreen />} />
+          <Route path="/friends/:uid" element={<FriendDetailScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
