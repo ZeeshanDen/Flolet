@@ -10,7 +10,10 @@ import { CategoryIcon } from "@/features/categories/icons";
 import AddCategorySheet from "@/features/categories/AddCategorySheet";
 import { pushKey } from "@/features/expenses/Numpad";
 import BottomSheet from "@/components/BottomSheet";
-import SplitEditor, { type SplitState } from "@/features/split/SplitEditor";
+import SplitEditor, {
+  participants,
+  type SplitState,
+} from "@/features/split/SplitEditor";
 import { resolveSplit, validateSplit } from "@/features/split/splitCalc";
 import { cn, currencySymbol, CURRENCIES } from "@/lib/utils";
 import { format } from "date-fns";
@@ -70,6 +73,12 @@ export default function EntryScreen() {
 
   useEffect(() => setNewGroupCurrency(currency), [currency]);
 
+  // "Who's included" is per-group; a stale list from another group would
+  // match nobody here.
+  useEffect(() => {
+    setSplit((s) => ({ ...s, included: undefined, input: {} }));
+  }, [groupId]);
+
   useEffect(() => {
     if (user) setSplit((s) => ({ ...s, paidBy: user.uid }));
   }, [user]);
@@ -94,7 +103,7 @@ export default function EntryScreen() {
     return validateSplit(
       numeric,
       split.type,
-      selectedGroup.memberUids,
+      participants(selectedGroup, split),
       split.input,
     );
   }, [selectedGroup, numeric, split]);
@@ -125,7 +134,7 @@ export default function EntryScreen() {
         const shares = resolveSplit(
           numeric,
           split.type,
-          selectedGroup.memberUids,
+          participants(selectedGroup, split),
           split.input,
         );
         await writeGroupExpense(selectedGroup.id, {

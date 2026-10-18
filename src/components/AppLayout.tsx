@@ -13,11 +13,14 @@ const tabs = [
 export default function AppLayout() {
   return (
     <div className="mx-auto flex h-full max-w-md flex-col">
-      <main className="safe-top flex-1 overflow-y-auto pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <main className="safe-top min-h-0 flex-1 overflow-y-auto pb-4">
         <Outlet />
       </main>
 
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-md items-stretch justify-around border-t border-border bg-surface/95 backdrop-blur">
+      {/* In-flow, NOT position:fixed — fixed anchors to iOS's (wrong-at-launch)
+          layout viewport; as the shell's last flex child it sits at the true
+          bottom of the --app-h-sized body. */}
+      <nav className="safe-bottom z-10 flex shrink-0 items-stretch justify-around border-t border-border bg-surface/95 backdrop-blur">
         {tabs.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}

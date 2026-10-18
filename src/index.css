@@ -41,9 +41,11 @@ html {
 }
 
 body {
-  /* Dynamic viewport height fixes the iOS standalone-PWA short-height bug. */
+  /* --app-h is measured in src/lib/iosViewport.ts (screen.height in an iOS
+     standalone PWA, where 100dvh is wrong until the first scroll). */
   height: 100%;
   height: 100dvh;
+  height: var(--app-h, 100dvh);
   overflow: hidden; /* only the in-app scroll regions scroll, not the document */
 }
 
