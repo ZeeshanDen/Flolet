@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   format,
   parseISO,
@@ -31,7 +31,7 @@ export default function HistoryScreen() {
   const { currency } = useProfile();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Expense | null>(null);
-  const [mode, setMode] = useState<PeriodMode>("all");
+  const [mode, setMode] = useState<PeriodMode>("month");
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -74,98 +74,132 @@ export default function HistoryScreen() {
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [filtered]);
 
-  return (
-    <div className="px-4 pt-4">
-      <h1 className="mb-3 text-xl font-bold">History</h1>
+  // Mini chart: the most recent 12 spending days in view, oldest → newest.
+  const bars = useMemo(() => {
+    const recent = groups.slice(0, 12).reverse();
+    const max = Math.max(1, ...recent.map(([, it]) => sum(it)));
+    return recent.map(([date, it]) => ({ date, pct: (sum(it) / max) * 100 }));
+  }, [groups]);
 
-      <div className="relative mb-4">
+  const periodLabel =
+    mode === "month"
+      ? format(monthCursor, "MMMM yyyy")
+      : mode === "all"
+        ? "All time"
+        : from || to
+          ? `${from || "…"} → ${to || "today"}`
+          : "Custom range";
+
+  return (
+    <div className="space-y-3 px-4 pt-3">
+      <div className="flex items-center justify-between">
+        <h1 className="text-[22px] font-bold tracking-tight">History</h1>
+        <div className="flex rounded-full bg-raised p-1 text-[12px] font-semibold">
+          {(
+            [
+              { key: "month", label: "Month" },
+              { key: "all", label: "All" },
+              { key: "custom", label: "Range" },
+            ] as { key: PeriodMode; label: string }[]
+          ).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setMode(t.key)}
+              className={cn(
+                "rounded-full px-3 py-1.5 transition",
+                mode === t.key
+                  ? "bg-card text-text shadow-card"
+                  : "text-muted",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary card: period, total, mini chart */}
+      <div className="card px-4 pb-3 pt-3.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-semibold text-muted">
+            {periodLabel}
+          </span>
+          {mode === "month" && (
+            <div className="-mr-2 flex">
+              <button
+                onClick={() => setMonthCursor((c) => addMonths(c, -1))}
+                aria-label="Previous month"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-raised"
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <button
+                onClick={() => setMonthCursor((c) => addMonths(c, 1))}
+                aria-label="Next month"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-raised"
+              >
+                <ChevronRight size={17} />
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="mt-0.5 text-[30px] font-bold tabular-nums tracking-[-0.03em]">
+          {formatMoney(periodTotal, currency)}
+        </div>
+        <div className="text-[12px] text-muted">
+          {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
+        </div>
+        {bars.length > 1 && (
+          <div className="mt-3 flex h-14 items-end gap-1.5">
+            {bars.map((b, i) => (
+              <span
+                key={b.date}
+                className={cn(
+                  "flex-1 rounded-t-md rounded-b-sm",
+                  i === bars.length - 1 ? "bg-brand-soft" : "bg-raised",
+                )}
+                style={{ height: `${Math.max(6, b.pct)}%` }}
+                title={`${b.date}`}
+              />
+            ))}
+          </div>
+        )}
+        {mode === "custom" && (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="date"
+              className="input min-w-0 flex-1 py-2"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              aria-label="From date"
+            />
+            <span className="text-sm text-muted">to</span>
+            <input
+              type="date"
+              className="input min-w-0 flex-1 py-2"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              aria-label="To date"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="relative">
         <Search
-          size={18}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+          size={17}
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-muted"
         />
         <input
-          className="input pl-10"
+          className="input rounded-full py-2.5 pl-11"
           placeholder="Search notes or categories"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
       </div>
 
-      {/* Period filter */}
-      <div className="mb-3 flex gap-2 rounded-xl bg-surface p-1">
-        {(
-          [
-            { key: "all", label: "All" },
-            { key: "month", label: "Month" },
-            { key: "custom", label: "Custom" },
-          ] as { key: PeriodMode; label: string }[]
-        ).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setMode(t.key)}
-            className={cn(
-              "flex-1 rounded-lg py-2 text-sm font-medium transition",
-              mode === t.key ? "bg-brand text-on-brand" : "text-muted",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {mode === "month" && (
-        <div className="mb-3 flex items-center justify-between rounded-xl border border-border bg-surface px-2 py-1.5">
-          <button
-            onClick={() => setMonthCursor((c) => addMonths(c, -1))}
-            aria-label="Previous month"
-            className="flex h-9 w-9 items-center justify-center text-muted"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <span className="font-semibold">{format(monthCursor, "MMMM yyyy")}</span>
-          <button
-            onClick={() => setMonthCursor((c) => addMonths(c, 1))}
-            aria-label="Next month"
-            className="flex h-9 w-9 items-center justify-center text-muted"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-      )}
-
-      {mode === "custom" && (
-        <div className="mb-3 flex items-center gap-2">
-          <input
-            type="date"
-            className="input flex-1"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            aria-label="From date"
-          />
-          <span className="text-sm text-muted">to</span>
-          <input
-            type="date"
-            className="input flex-1"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            aria-label="To date"
-          />
-        </div>
-      )}
-
-      {mode !== "all" && filtered.length > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-xl bg-brand/10 px-3.5 py-2.5 text-sm">
-          <span className="text-muted">
-            {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
-          </span>
-          <span className="font-bold text-brand-soft">
-            {formatMoney(periodTotal, currency)}
-          </span>
-        </div>
-      )}
-
       {groups.length === 0 && (
-        <p className="mt-10 text-center text-muted">
+        <p className="pt-8 text-center text-muted">
           {loading
             ? "Loading…"
             : mode === "all"
@@ -174,53 +208,51 @@ export default function HistoryScreen() {
         </p>
       )}
 
-      <div className="space-y-5">
-        {groups.map(([date, items]) => {
-          const dayTotal = items.reduce((s, e) => s + e.amount, 0);
-          return (
-            <div key={date}>
-              <div className="mb-2 flex items-center justify-between text-sm text-muted">
-                <span>{dayLabel(date)}</span>
-                <span>{formatMoney(dayTotal, currency)}</span>
-              </div>
-              <div className="space-y-2">
-                {items.map((e) => {
-                  const cat = catById[e.categoryId];
-                  return (
-                    <button
-                      key={e.id}
-                      onClick={() => setEditing(e)}
-                      className="flex w-full items-center gap-3 rounded-xl bg-card px-3 py-2 text-left transition active:scale-[0.99]"
-                    >
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                        style={{
-                          background: (cat?.color ?? "#94a3b8") + "33",
-                          color: cat?.color ?? "#94a3b8",
-                        }}
-                      >
-                        <CategoryIcon name={cat?.icon ?? "CircleDollarSign"} size={18} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">
-                          {e.name || cat?.name}
-                        </p>
-                        <p className="text-xs text-muted">{cat?.name}</p>
-                      </div>
-                      <span className="font-semibold tabular-nums">
-                        {formatMoney(e.amount, currency)}
-                      </span>
-                      <Pencil size={15} className="shrink-0 text-muted" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {groups.map(([date, items]) => (
+        <div key={date} className="card px-4 pb-1.5 pt-3">
+          <div className="flex items-center justify-between text-[12px] font-semibold text-muted">
+            <span>{dayLabel(date)}</span>
+            <span className="tabular-nums">{formatMoney(sum(items), currency)}</span>
+          </div>
+          <div className="divide-y divide-border">
+            {items.map((e) => {
+              const cat = catById[e.categoryId];
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => setEditing(e)}
+                  className="flex w-full items-center gap-3 py-2.5 text-left transition active:opacity-70"
+                >
+                  <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      background: (cat?.color ?? "#94a3b8") + "1f",
+                      color: cat?.color ?? "#94a3b8",
+                    }}
+                  >
+                    <CategoryIcon name={cat?.icon ?? "CircleDollarSign"} size={18} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold">
+                      {e.name || cat?.name}
+                    </p>
+                    <p className="text-[12px] text-muted">{cat?.name}</p>
+                  </div>
+                  <span className="text-[14px] font-semibold tabular-nums">
+                    {formatMoney(e.amount, currency)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
       <EditExpenseSheet expense={editing} onClose={() => setEditing(null)} />
     </div>
   );
+}
+
+function sum(items: Expense[]): number {
+  return items.reduce((s, e) => s + e.amount, 0);
 }

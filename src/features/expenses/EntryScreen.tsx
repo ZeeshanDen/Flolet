@@ -179,24 +179,9 @@ export default function EntryScreen() {
   };
 
   return (
-    <div className="flex h-full flex-col px-[22px] pt-1.5">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between pt-1">
-        <h1 className="text-xl font-extrabold tracking-tight">New expense</h1>
-        <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] text-muted">
-          <Calendar size={14} />
-          <span>{date === today() ? "Today" : date}</span>
-          <input
-            type="date"
-            className="sr-only"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </label>
-      </div>
-
-      {/* Amount card — tap to raise keypad; Split pill inside */}
-      <div className="hero-card mt-3.5 flex shrink-0 flex-col px-5 pb-4 pt-[18px]">
+    <div className="flex h-full flex-col px-4 pt-2">
+      {/* Amount card — tap to raise keypad; Split + date chips inside */}
+      <div className="hero-card flex shrink-0 flex-col px-5 pb-4 pt-[18px]">
         <button onClick={() => setKeypadOpen(true)} className="text-left">
           <div className="text-[12px] font-medium text-[rgb(var(--hero-muted))]">
             {amount ? "New expense" : "Tap to enter amount"}
@@ -226,74 +211,72 @@ export default function EntryScreen() {
           <Users size={14} />
           {splitActive ? "Split on" : "Split"}
         </button>
-        <span className="hero-chip flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold">
+        <label className="hero-chip flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold">
           <Calendar size={14} />
           {date === today() ? "Today" : date}
-        </span>
+          <input
+            type="date"
+            className="sr-only"
+            aria-label="Date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
         </div>
       </div>
 
       {/* Category */}
-      <div className="min-h-0 flex-1 overflow-y-auto pt-5">
-        <div className="pb-2.5 text-[13px] font-semibold text-muted">
-          Category
-        </div>
-        <div className="grid grid-cols-4 gap-2.5">
-          {categories.map((c) => {
-            const active = c.id === categoryId;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setCategoryId(c.id)}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-2xl py-2.5 transition",
-                  active ? "border-[1.5px]" : "border border-border bg-surface",
-                )}
-                style={
-                  active
-                    ? {
-                        background: c.color + "22",
-                        borderColor: c.color,
-                        boxShadow: `0 4px 12px -4px ${c.color}66`,
-                      }
-                    : undefined
-                }
-              >
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-full"
-                  style={{
-                    background: c.color + (active ? "33" : "1f"),
-                    color: c.color,
-                  }}
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pt-3">
+        <div className="card px-3 pb-3 pt-3.5">
+          <div className="mb-3 px-1 text-[12px] font-semibold text-muted">
+            Category
+          </div>
+          <div className="grid grid-cols-4 gap-x-1 gap-y-3.5">
+            {categories.map((c) => {
+              const active = c.id === categoryId;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setCategoryId(c.id)}
+                  className="flex flex-col items-center gap-1.5"
                 >
-                  <CategoryIcon name={c.icon} size={19} />
-                </span>
-                <span
-                  className={cn(
-                    "max-w-full truncate text-[11px] font-semibold",
-                    active ? "text-text" : "text-muted",
-                  )}
-                >
-                  {c.name}
-                </span>
-              </button>
-            );
-          })}
-          <button
-            onClick={() => setAddCatOpen(true)}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-brand-soft py-2.5"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-brand-soft">
-              <Plus size={20} />
-            </span>
-            <span className="text-[11px] font-semibold text-brand-soft">
-              Add
-            </span>
-          </button>
+                  <span
+                    className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-full transition",
+                      active && "ring-2 ring-text ring-offset-2 ring-offset-card",
+                    )}
+                    style={{
+                      background: c.color + (active ? "38" : "1c"),
+                      color: c.color,
+                    }}
+                  >
+                    <CategoryIcon name={c.icon} size={20} />
+                  </span>
+                  <span
+                    className={cn(
+                      "max-w-full truncate px-0.5 text-[11px]",
+                      active ? "font-semibold text-text" : "font-medium text-muted",
+                    )}
+                  >
+                    {c.name}
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setAddCatOpen(true)}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-muted/60 text-muted">
+                <Plus size={20} />
+              </span>
+              <span className="text-[11px] font-medium text-muted">New</span>
+            </button>
+          </div>
         </div>
 
         {/* Note */}
-        <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-border bg-surface px-3.5 py-3">
+        <div className="card flex items-center gap-2.5 px-4 py-3">
           <Pencil size={16} className="text-muted" />
           <input
             className="w-full bg-transparent text-[15px] outline-none placeholder:text-muted"
@@ -319,12 +302,12 @@ export default function EntryScreen() {
           onClick={onSavePress}
           disabled={saving}
           className={cn(
-            "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-base font-bold transition",
+            "flex h-[52px] w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition",
             saved
               ? "bg-good text-white"
               : canSave
                 ? "bg-brand text-on-brand"
-                : "bg-border text-muted",
+                : "bg-raised text-muted",
           )}
         >
           <Check size={20} />

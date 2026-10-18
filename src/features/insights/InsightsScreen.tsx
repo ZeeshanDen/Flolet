@@ -87,84 +87,83 @@ export default function InsightsScreen() {
     view === "month" ? format(cursor, "MMMM yyyy") : format(cursor, "yyyy");
 
   return (
-    <div className="px-4 pt-4">
-      <h1 className="mb-3 text-xl font-bold">Insights</h1>
-
-      {/* View toggle */}
-      <div className="mb-4 flex gap-2">
-        {(["month", "year"] as View[]).map((v) => (
-          <button
-            key={v}
-            onClick={() => setView(v)}
-            className={cn(
-              "flex-1 rounded-xl py-2 text-sm font-medium capitalize transition",
-              view === v ? "bg-brand text-on-brand" : "bg-card text-muted",
-            )}
-          >
-            {v === "month" ? "Monthly" : "Yearly"}
-          </button>
-        ))}
+    <div className="space-y-3 px-4 pt-3">
+      <div className="flex items-center justify-between">
+        <h1 className="text-[22px] font-bold tracking-tight">Insights</h1>
+        <div className="flex rounded-full bg-raised p-1 text-[12px] font-semibold">
+          {(["month", "year"] as View[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={cn(
+                "rounded-full px-3 py-1.5 transition",
+                view === v ? "bg-card text-text shadow-card" : "text-muted",
+              )}
+            >
+              {v === "month" ? "Month" : "Year"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Period nav */}
-      <div className="mb-4 flex items-center justify-between">
-        <button
-          onClick={() => step(-1)}
-          aria-label="Previous period"
-          className="p-2 text-muted"
-        >
-          <ChevronLeft />
-        </button>
-        <span className="font-semibold">{label}</span>
-        <button
-          onClick={() => step(1)}
-          aria-label="Next period"
-          className="p-2 text-muted"
-        >
-          <ChevronRight />
-        </button>
-      </div>
-
-      {/* Total + comparison */}
-      <div className="card mb-4 text-center">
-        <p className="text-sm text-muted">Total spent</p>
-        <p className="text-3xl font-bold">{formatMoney(total, currency)}</p>
+      {/* Hero total: period, amount, change vs previous */}
+      <div className="hero-card px-5 pb-4 pt-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-medium text-[rgb(var(--hero-muted))]">
+            Spent in {label}
+          </span>
+          <div className="-mr-2 flex">
+            <button
+              onClick={() => step(-1)}
+              aria-label="Previous period"
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => step(1)}
+              aria-label="Next period"
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+        <div className="mt-0.5 text-[38px] font-bold leading-tight tabular-nums tracking-[-0.035em]">
+          {formatMoney(total, currency)}
+        </div>
         {prevTotal > 0 && (
-          <p
-            className={cn(
-              "mt-1 flex items-center justify-center gap-1 text-sm",
-              delta > 0 ? "text-bad" : "text-good",
-            )}
-          >
-            {delta > 0 ? (
-              <TrendingUp size={14} />
-            ) : (
-              <TrendingDown size={14} />
-            )}
-            {Math.abs(delta).toFixed(0)}% vs last {view}
-          </p>
+          <span className="hero-chip mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-semibold">
+            {delta > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+            {Math.abs(delta).toFixed(0)}% {delta > 0 ? "more" : "less"} than
+            last {view}
+          </span>
         )}
       </div>
 
       {periodExpenses.length === 0 ? (
-        <p className="mt-10 text-center text-muted">
+        <p className="pt-8 text-center text-muted">
           No spending in this period.
         </p>
       ) : (
         <>
-          {/* Category donut */}
-          <div className="card mb-4">
-            <p className="mb-2 text-sm text-muted">By category</p>
-            <div className="h-52">
+          {/* Category donut with centred total + proportion rows */}
+          <div className="card">
+            <p className="mb-1 text-[12px] font-semibold text-muted">
+              By category
+            </p>
+            <div className="relative h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={slices}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={55}
-                    outerRadius={85}
+                    innerRadius={66}
+                    outerRadius={84}
                     paddingAngle={2}
+                    cornerRadius={4}
+                    stroke="none"
                   >
                     {slices.map((s) => (
                       <Cell key={s.categoryId} fill={s.color} />
@@ -177,34 +176,51 @@ export default function InsightsScreen() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[11px] font-medium text-muted">
+                  {slices.length} categories
+                </span>
+                <span className="text-[18px] font-bold tabular-nums tracking-tight">
+                  {slices[0]?.name}
+                </span>
+                <span className="text-[11px] text-muted">biggest</span>
+              </div>
             </div>
-            <div className="mt-2 space-y-1">
-              {slices.map((s) => (
-                <div
-                  key={s.categoryId}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span className="flex items-center gap-2">
-                    <span
-                      className="h-3 w-3 rounded-full"
-                      style={{ background: s.color }}
-                    />
-                    {s.name}
-                  </span>
-                  <span className="tabular-nums text-muted">
-                    {formatMoney(s.value, currency)}{" "}
-                    <span className="text-xs">
-                      ({((s.value / total) * 100).toFixed(0)}%)
-                    </span>
-                  </span>
-                </div>
-              ))}
+            <div className="mt-2 space-y-3">
+              {slices.map((s) => {
+                const pct = total > 0 ? (s.value / total) * 100 : 0;
+                return (
+                  <div key={s.categoryId}>
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span className="flex min-w-0 items-center gap-2 font-medium">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: s.color }}
+                        />
+                        <span className="truncate">{s.name}</span>
+                      </span>
+                      <span className="shrink-0 font-semibold tabular-nums">
+                        {formatMoney(s.value, currency)}
+                        <span className="ml-1.5 text-[11px] font-medium text-muted">
+                          {pct.toFixed(0)}%
+                        </span>
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-raised">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${pct}%`, background: s.color }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Spend over time */}
-          <div className="card mb-4">
-            <p className="mb-2 text-sm text-muted">
+          <div className="card">
+            <p className="mb-2 text-[12px] font-semibold text-muted">
               {view === "month" ? "Daily spend" : "Monthly spend"}
             </p>
             <div className="h-40">
@@ -212,6 +228,8 @@ export default function InsightsScreen() {
                 <BarChart data={buckets}>
                   <XAxis
                     dataKey="label"
+                    axisLine={false}
+                    tickLine={false}
                     tick={{ fill: "rgb(var(--muted))", fontSize: 11 }}
                     interval="preserveStartEnd"
                   />

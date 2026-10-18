@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ClipboardList,
   PackagePlus,
-  MoreVertical,
   IndianRupee,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -25,13 +24,12 @@ import { cn } from "@/lib/utils";
 import type { Medicine } from "@/lib/types";
 
 function statusColor(days: number) {
-  if (days <= 5) return { text: "text-bad", bg: "bg-bad/15", bar: "#f43f5e" };
-  if (days <= 14)
-    return { text: "text-[#eab308]", bg: "bg-[#eab308]/15", bar: "#eab308" };
-  return { text: "text-good", bg: "bg-good/15", bar: "#10b981" };
+  if (days <= 5) return { text: "text-bad", bg: "bg-bad/12", bar: "#e5484d" };
+  if (days <= 14) return { text: "text-warn", bg: "bg-warn/12", bar: "#d97706" };
+  return { text: "text-good", bg: "bg-good/12", bar: "#16a34a" };
 }
 
-function MedCard({
+function MedRow({
   med,
   personName,
   onTap,
@@ -49,48 +47,32 @@ function MedCard({
   return (
     <button
       onClick={() => onTap(med)}
-      className="w-full rounded-2xl border border-border bg-card p-3.5 text-left transition active:scale-[0.99]"
+      className="flex w-full items-center gap-3 py-3 text-left transition active:opacity-70"
     >
-      <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-            c.bg,
-            c.text,
-          )}
-        >
-          <Pill size={19} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{med.name}</p>
-          <p className="truncate text-xs text-muted">
-            {personName ? `${personName} · ` : ""}
-            {scheduleLabel(med)}
-          </p>
-        </div>
-        <div className="shrink-0 text-right">
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-bold",
-              c.bg,
-              c.text,
-            )}
-          >
-            {out ? "Out of stock" : days === 0 ? "Last day" : `${days}d left`}
-          </span>
-          <p className="mt-1 text-xs text-muted">
-            {out
-              ? "refill now"
-              : `${remaining} ${med.unit}${remaining === 1 ? "" : "s"} · till ${format(parseISO(runOutDate(med)), "d MMM")}`}
-          </p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] font-semibold">{med.name}</p>
+        <p className="truncate text-[12px] text-muted">
+          {personName ? `${personName} · ` : ""}
+          {out
+            ? scheduleLabel(med)
+            : `${remaining} ${med.unit}${remaining === 1 ? "" : "s"} · till ${format(parseISO(runOutDate(med)), "d MMM")}`}
+        </p>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-raised">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${Math.max(2, pct)}%`, background: c.bar }}
+          />
         </div>
       </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: c.bar }}
-        />
-      </div>
+      <span
+        className={cn(
+          "shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold",
+          c.bg,
+          c.text,
+        )}
+      >
+        {out ? "Out" : days === 0 ? "Last day" : `${days} days`}
+      </span>
     </button>
   );
 }
@@ -122,7 +104,6 @@ export default function MedsScreen() {
   const [orderOpen, setOrderOpen] = useState(false);
   const [stockInOpen, setStockInOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const openAdd = () => {
     setEditing(null);
@@ -134,121 +115,93 @@ export default function MedsScreen() {
   };
 
   return (
-    <div className="px-4 pt-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Medicines</h1>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setOrderOpen(true)}
-            disabled={medicines.length === 0}
-            aria-label="Order medicines"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-text disabled:opacity-40"
-          >
-            <ClipboardList size={19} />
-          </button>
-          <button
-            onClick={() => setStockInOpen(true)}
-            disabled={medicines.length === 0}
-            aria-label="Stock in"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-text disabled:opacity-40"
-          >
-            <PackagePlus size={19} />
-          </button>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="More options"
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-card text-text"
-            >
-              <MoreVertical size={19} />
-            </button>
-            {menuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  aria-hidden="true"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-11 z-40 w-48 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setCostOpen(true);
-                    }}
-                    className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium"
-                  >
-                    <IndianRupee size={16} className="text-brand-soft" />
-                    Monthly cost
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-          <button onClick={openAdd} className="btn-brand px-3 py-2">
-            <Plus size={18} />
-            Add
-          </button>
-        </div>
+    <div className="space-y-3 px-4 pt-3">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-[22px] font-bold tracking-tight">Medicines</h1>
+        <button
+          onClick={openAdd}
+          aria-label="Add medicine"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-on-brand"
+        >
+          <Plus size={20} />
+        </button>
       </div>
 
       {persons.length > 0 && (
-        <div className="noscroll mb-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="noscroll flex w-fit max-w-full overflow-x-auto rounded-full bg-raised p-1 text-[12px] font-semibold">
+          {[{ id: null as string | null, name: "Everyone" }, ...persons].map(
+            (p) => (
+              <button
+                key={p.id ?? "all"}
+                onClick={() => setFilter(p.id)}
+                className={cn(
+                  "shrink-0 rounded-full px-3.5 py-1.5 transition",
+                  filter === p.id
+                    ? "bg-card text-text shadow-card"
+                    : "text-muted",
+                )}
+              >
+                {p.name}
+              </button>
+            ),
+          )}
+        </div>
+      )}
+
+      {medicines.length > 0 && (
+        <div className="noscroll -mx-4 flex gap-2 overflow-x-auto px-4">
           <button
-            onClick={() => setFilter(null)}
-            className={cn(
-              "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
-              filter === null
-                ? "bg-brand text-on-brand"
-                : "border border-border bg-surface text-muted",
-            )}
+            onClick={() => setOrderOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-semibold"
           >
-            Everyone
+            <ClipboardList size={15} />
+            Order list
           </button>
-          {persons.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setFilter(p.id)}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition",
-                filter === p.id
-                  ? "bg-brand text-on-brand"
-                  : "border border-border bg-surface text-muted",
-              )}
-            >
-              {p.name}
-            </button>
-          ))}
+          <button
+            onClick={() => setStockInOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-semibold"
+          >
+            <PackagePlus size={15} />
+            Stock in
+          </button>
+          <button
+            onClick={() => setCostOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-semibold"
+          >
+            <IndianRupee size={15} />
+            Monthly cost
+          </button>
         </div>
       )}
 
       {loading ? (
-        <p className="mt-10 text-center text-muted">Loading…</p>
+        <p className="pt-8 text-center text-muted">Loading…</p>
       ) : medicines.length === 0 ? (
-        <div className="mt-14 text-center">
-          <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand/10 text-brand-soft">
-            <Pill size={26} />
+        <div className="card pb-6 pt-8 text-center">
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-raised text-muted">
+            <Pill size={22} />
           </span>
           <p className="font-semibold">No medicines yet</p>
-          <p className="mx-auto mt-1 max-w-[240px] text-sm text-muted">
-            Add a medicine with its schedule and stock — Flowlet tells you when
-            it's about to run out.
+          <p className="mx-auto mt-1 max-w-[250px] text-sm text-muted">
+            Add a medicine with its schedule and stock. Flowlet tells you
+            before it runs out.
           </p>
         </div>
       ) : sorted.length === 0 ? (
-        <p className="mt-10 text-center text-muted">
+        <p className="pt-8 text-center text-muted">
           No medicines for this person yet.
         </p>
       ) : (
-        <div className="space-y-5">
+        <>
           {refillSoon.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-bad">
-                <AlertTriangle size={15} />
-                Refill soon
+            <div className="card px-4 pb-1 pt-3.5">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-bad">
+                <AlertTriangle size={14} />
+                Needs refill · {refillSoon.length}
               </p>
-              <div className="space-y-2">
+              <div className="divide-y divide-border">
                 {refillSoon.map((m) => (
-                  <MedCard
+                  <MedRow
                     key={m.id}
                     med={m}
                     personName={nameFor(m)}
@@ -259,13 +212,13 @@ export default function MedsScreen() {
             </div>
           )}
           {healthy.length > 0 && (
-            <div>
-              {refillSoon.length > 0 && (
-                <p className="mb-2 text-sm text-muted">Stocked up</p>
-              )}
-              <div className="space-y-2">
+            <div className="card px-4 pb-1 pt-3.5">
+              <p className="text-[12px] font-semibold text-muted">
+                Stocked · {healthy.length}
+              </p>
+              <div className="divide-y divide-border">
                 {healthy.map((m) => (
-                  <MedCard
+                  <MedRow
                     key={m.id}
                     med={m}
                     personName={nameFor(m)}
@@ -275,7 +228,7 @@ export default function MedsScreen() {
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
       <MedicineSheet
