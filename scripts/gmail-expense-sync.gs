@@ -31,6 +31,7 @@ var CATEGORY_RULES = [
   // Health by hand when it's not hers).
   { re: /JANWA|MEDIC/i, cat: "Mom Health" },
   { re: /PHARM|APOLLO|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health" },
+  { re: /INSTAMART/i, cat: "Groceries" }, // before Swiggy: Instamart is grocery
   { re: /SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "Food" },
   { re: /ZEPTO|BIGBASKET|GROCER|DMART|JIOMART|RELIANCE FRESH/i, cat: "Groceries" },
   { re: /UBER|OLA|RAPIDO|IRCTC|REDBUS|METRO|FUEL|PETROL|HPCL|IOCL|BPCL/i, cat: "Transport" },
@@ -53,7 +54,7 @@ var PARSERS = [
     parse: function (body) {
       // Primary: "INR 110.00 were spent on your ... xx4693 at UPI/ZEPTONOW on 16-08-2026"
       var m = body.match(
-        /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)\s*at\s*(.+?)\s*on\s*(\d{2}-\d{2}-\d{4})/i,
+        /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)\s*at\s*(.+?)\s*on\s*(\d{2}[-/]\d{2}[-/]\d{4})/i,
       );
       if (m && m[1] && m[4]) {
         return {
@@ -65,7 +66,7 @@ var PARSERS = [
       }
       // Fallback: variants without an "at MERCHANT" segment (ATM/POS etc.)
       var f = body.match(
-        /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)[\s\S]*?on\s*(\d{2}-\d{2}-\d{4})/i,
+        /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)[\s\S]*?on\s*(\d{2}[-/]\d{2}[-/]\d{4})/i,
       );
       if (f && f[1] && f[3]) {
         return {
@@ -85,7 +86,7 @@ var PARSERS = [
     match: /SBI c(?:ard|redit card)/i,
     parse: function (body) {
       var m = body.match(
-        /Rs\.?\s*([\d,]+(?:\.\d+)?)\s*spent on your SBI Credit Card ending(?: with)?\s*(\d+)\s*at\s*(.+?)\s*on\s*(\d{2}-\d{2}-\d{2,4})/i,
+        /Rs\.?\s*([\d,]+(?:\.\d+)?)\s*spent on your SBI Credit Card ending(?: with)?\s*(\d+)\s*at\s*(.+?)\s*on\s*(\d{2}[-/]\d{2}[-/]\d{2,4})/i,
       );
       if (m && m[1] && m[4]) {
         return {
@@ -97,7 +98,7 @@ var PARSERS = [
       }
       // Fallback: no "at MERCHANT" segment
       var f = body.match(
-        /Rs\.?\s*([\d,]+(?:\.\d+)?)\s*spent on your SBI Credit Card[\s\S]*?on\s*(\d{2}-\d{2}-\d{2,4})/i,
+        /Rs\.?\s*([\d,]+(?:\.\d+)?)\s*spent on your SBI Credit Card[\s\S]*?on\s*(\d{2}[-/]\d{2}[-/]\d{2,4})/i,
       );
       if (f && f[1] && f[2]) {
         return {
@@ -118,7 +119,7 @@ var PARSERS = [
     match: /Axis Bank Credit Card/i,
     parse: function (body) {
       var m = body.match(
-        /Transaction Amount:\s*INR\s*([\d,]+(?:\.\d+)?)\s*Merchant Name:\s*(.+?)\s*Axis Bank Credit Card No\.?\s*(\S+)\s*Date\s*&\s*Time:\s*(\d{2}-\d{2}-\d{4})/i,
+        /Transaction Amount:\s*INR\s*([\d,]+(?:\.\d+)?)\s*Merchant Name:\s*(.+?)\s*Axis Bank Credit Card No\.?\s*(\S+)\s*Date\s*&\s*Time:\s*(\d{2}[-/]\d{2}[-/]\d{4})/i,
       );
       if (!m || !m[1] || !m[4]) return null;
       return {
@@ -180,7 +181,7 @@ function cleanMerchant(raw) {
 }
 
 function ddmmyyyyToIso(d) {
-  var p = String(d || "").split("-");
+  var p = String(d || "").split(/[-\/]/);
   if (p.length !== 3) return "";
   var year = p[2].length === 2 ? "20" + p[2] : p[2]; // "26" → "2026"
   return year + "-" + p[1] + "-" + p[0];
