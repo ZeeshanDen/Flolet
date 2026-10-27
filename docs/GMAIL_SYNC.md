@@ -45,7 +45,8 @@ Two options:
 - **Second script:** repeat setup in the other account, **and** grant that email write access: Google Cloud Console → IAM (project `flowlet-dev`) → Grant access → the second email → role **Cloud Datastore User**. (The project owner's own inbox needs no grant.)
 
 ## How duplicates are prevented
-- Processed threads get the Gmail label `Flowlet/Synced` and are excluded from later searches.
+- Each processed **email** (not thread) is remembered in the script's properties, so new alerts that Gmail groups into an existing conversation are still picked up. The `Flowlet/Synced` label is only a visual marker.
+- Expenses already in Flowlet are never overwritten, so edits you make in the app (category, note) are safe.
 - The Firestore document id is `gmail-<messageId>` — re-running can only overwrite the same doc, never duplicate it.
 - **Manual-entry guard:** before writing, the script checks whether an expense you entered by hand already exists with the same date + amount, and skips the import if so (logged as "Skipped duplicate"). Two gmail imports never block each other — two real same-amount transactions arrive as two distinct emails. Edge case: if you manually logged one of two genuinely separate same-amount transactions on one day, the second email gets skipped — check the log.
 

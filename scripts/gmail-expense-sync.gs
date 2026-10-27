@@ -331,22 +331,68 @@ function resetSyncedLabel() {
   Logger.log("Removed label from " + threads.length + " thread(s).");
 }
 
+// ── Per-MESSAGE dedupe ───────────────────────────────────────────────────
+// Gmail groups alerts with identical subjects (every "Transaction Alert from
+// PhonePe SBI card…") into ONE thread. Labels are per-thread, so excluding
+// labelled threads silently skipped every later alert in the thread. Instead
+// track processed message ids in script properties.
+var PROCESSED_PREFIX = "m_";
+var PROCESSED_TTL_DAYS = 120;
+
+function processedStore() {
+  var props = PropertiesService.getScriptProperties();
+  var all = props.getProperties();
+  // Prune old ids so the store never grows past the 500KB properties cap.
+  var cutoff = Date.now() - PROCESSED_TTL_DAYS * 864e5;
+  Object.keys(all).forEach(function (k) {
+    if (k.indexOf(PROCESSED_PREFIX) === 0 && Number(all[k]) < cutoff) {
+      props.deleteProperty(k);
+      delete all[k];
+    }
+  });
+  return {
+    has: function (id) { return all.hasOwnProperty(PROCESSED_PREFIX + id); },
+    add: function (id) {
+      var v = String(Date.now());
+      props.setProperty(PROCESSED_PREFIX + id, v);
+      all[PROCESSED_PREFIX + id] = v;
+    },
+  };
+}
+
+/** True when this email's expense doc already exists in Firestore. */
+function expenseDocExists(messageId) {
+  var url =
+    "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT_ID +
+    "/databases/(default)/documents/users/" + FLOWLET_UID +
+    "/expenses/gmail-" + messageId + "?mask.fieldPaths=amount";
+  var res = UrlFetchApp.fetch(url, {
+    headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true,
+  });
+  return res.getResponseCode() === 200;
+}
+
 function runSync(windowQuery) {
   if (FLOWLET_UID.indexOf("PASTE_") === 0)
     throw new Error("Set FLOWLET_UID in the CONFIG block first.");
   var label = getLabel();
-  var query =
-    windowQuery + " " + SUBJECT_QUERY + " -label:" + LABEL_NAME;
+  var store = processedStore();
+  // No -label filter: a labelled thread can still hold new messages.
+  var query = windowQuery + " " + SUBJECT_QUERY;
   Logger.log("Query: " + query);
 
-  var synced = 0;
-  // Page through in chunks of 50 threads until the search is exhausted.
-  for (;;) {
-    var threads = GmailApp.search(query, 0, 50);
-    Logger.log("Matched " + threads.length + " thread(s) this page.");
+  var synced = 0, skipped = 0;
+  for (var start = 0; ; start += 50) {
+    var threads = GmailApp.search(query, start, 50);
     if (threads.length === 0) break;
     threads.forEach(function (thread) {
       thread.getMessages().forEach(function (msg) {
+        var id = msg.getId();
+        if (store.has(id)) return;
+        // Already imported (by the old thread-based logic, or edited in the
+        // app since): never overwrite the user's edits — just remember it.
+        if (expenseDocExists(id)) { store.add(id); skipped++; return; }
         var subject = msg.getSubject() || "";
         // Gmail hard-wraps long lines; merchants can straddle a break
         // ("UPI/JANWA\nMEDICAL"), so flatten whitespace before parsing.
@@ -356,16 +402,22 @@ function runSync(windowQuery) {
           if (!p.match.test(subject) && !p.match.test(body)) continue;
           var tx = p.parse(body);
           if (!tx || !(tx.amount > 0) || !tx.date) continue;
-          writeExpense(msg.getId(), tx);
-          synced++;
+          if (writeExpense(id, tx)) synced++;
           break;
         }
+        // Mark even unparseable mail so it isn't re-read every 10 minutes.
+        store.add(id);
       });
-      thread.addLabel(label); // labeling removes it from the next page's search
+      thread.addLabel(label); // visual marker only — no longer used to skip
     });
     if (threads.length < 50) break;
   }
-  Logger.log("Synced " + synced + " expense(s).");
+  Logger.log("Synced " + synced + " new expense(s); " + skipped + " already in Flowlet.");
+}
+
+/** One-time: pick up alerts the old thread-label logic missed (last 31 days). */
+function recoverMissed() {
+  runSync("newer_than:31d");
 }
 
 // Fetched once per run: lowercase category name → doc id.
@@ -481,7 +533,7 @@ function writeExpense(messageId, tx) {
       "Skipped duplicate: " + tx.date + " ₹" + tx.amount + " (" + tx.merchant +
         ") — a manual entry with this date+amount already exists.",
     );
-    return;
+    return false;
   }
   var url =
     "https://firestore.googleapis.com/v1/projects/" +
@@ -510,4 +562,6 @@ function writeExpense(messageId, tx) {
   });
   if (res.getResponseCode() >= 300)
     throw new Error("Firestore write failed: " + res.getContentText());
+  Logger.log("Added: " + tx.date + " ₹" + tx.amount + " " + tx.merchant);
+  return true;
 }
