@@ -396,7 +396,7 @@ function runSync(windowQuery) {
         if (expenseDocExists(id)) { store.add(id); skipped++; return; }
         var subject = msg.getSubject() || "";
         // Gmail hard-wraps long lines; merchants can straddle a break
-        // ("UPI/JANWA\nMEDICAL"), so flatten whitespace before parsing.
+        // ("UPI/CITY\nMEDICAL"), so flatten whitespace before parsing.
         var body = (msg.getPlainBody() || "").replace(/\s+/g, " ");
         for (var i = 0; i < PARSERS.length; i++) {
           var p = PARSERS[i];
