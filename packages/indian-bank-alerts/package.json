@@ -1,0 +1,63 @@
+{
+  "name": "indian-bank-alerts",
+  "version": "0.1.0",
+  "description": "Parse Indian bank card transaction alert emails (AU, SBI Card, Axis, ICICI) into structured data. Zero dependencies.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": [
+    "india",
+    "bank",
+    "transaction",
+    "alert",
+    "email",
+    "parser",
+    "upi",
+    "credit-card",
+    "expense",
+    "sbi",
+    "icici",
+    "axis",
+    "au-bank"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZeeshanDen/Flolet.git",
+    "directory": "packages/indian-bank-alerts"
+  },
+  "bugs": "https://github.com/ZeeshanDen/Flolet/issues",
+  "devDependencies": {
+    "tsup": "8.3.5",
+    "typescript": "5.6.3",
+    "vitest": "2.1.9"
+  }
+}

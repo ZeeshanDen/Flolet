@@ -48,11 +48,11 @@ var FALLBACK_CATEGORY_ID = "default-9"; // used only if "Other" was renamed
 var PARSERS = [
   {
     // AU Bank credit card:
-    // "INR 110.00 were spent on your AU Bank Credit Card xx4693 at UPI/ZEPTONOW on 16-08-2026 at 02:10:03 pm"
+    // "INR 110.00 were spent on your AU Bank Credit Card xx1234 at UPI/ZEPTONOW on 16-08-2026 at 02:10:03 pm"
     name: "AU Bank CC",
     match: /AU Bank Credit Card Transaction Alert/i, // subject
     parse: function (body) {
-      // Primary: "INR 110.00 were spent on your ... xx4693 at UPI/ZEPTONOW on 16-08-2026"
+      // Primary: "INR 110.00 were spent on your ... xx1234 at UPI/ZEPTONOW on 16-08-2026"
       var m = body.match(
         /INR\s*([\d,]+(?:\.\d+)?)\s*were spent on your AU Bank Credit Card\s*(\S+)\s*at\s*(.+?)\s*on\s*(\d{2}[-/]\d{2}[-/]\d{4})/i,
       );
@@ -81,7 +81,7 @@ var PARSERS = [
   },
   {
     // SBI Card (incl. PhonePe SBI co-brand):
-    // "Rs.217.00 spent on your SBI Credit Card ending with 8904 at MEESHOTECHNOLOGIESPRI on 22-08-26 via UPI (Ref No. ...)"
+    // "Rs.217.00 spent on your SBI Credit Card ending with 1234 at MEESHOTECHNOLOGIESPRI on 22-08-26 via UPI (Ref No. ...)"
     name: "SBI Card",
     match: /SBI c(?:ard|redit card)/i,
     parse: function (body) {
@@ -114,7 +114,7 @@ var PARSERS = [
   {
     // Axis Bank credit card (tabular email):
     // "Transaction Amount: INR 2710 Merchant Name: BLINKIT
-    //  Axis Bank Credit Card No. XX1968 Date & Time: 08-08-2026, 14:16:16 IST"
+    //  Axis Bank Credit Card No. XX1234 Date & Time: 08-08-2026, 14:16:16 IST"
     name: "Axis CC",
     match: /Axis Bank Credit Card/i,
     parse: function (body) {
@@ -133,9 +133,9 @@ var PARSERS = [
   {
     // ICICI debit card:
     // "A purchase of Rs. 355.46 has been made using your Debit Card linked to
-    //  ICICI Bank Account XX980 on 26-Jul-26. Info: VIN*BOOK MY SHO."
+    //  ICICI Bank Account XX123 on 26-Jul-26. Info: VIN*BOOK MY SHO."
     // ICICI credit card:
-    // "Your ICICI Bank Credit Card XX7000 has been used for a transaction of
+    // "Your ICICI Bank Credit Card XX1234 has been used for a transaction of
     //  INR 294.10 on Jul 18, 2026 at 10:14:31. Info: AMAZON PAY IN E COMMERCE."
     name: "ICICI",
     match: /ICICI Bank/i,

@@ -33,6 +33,7 @@ A privacy-first expense tracker for Indian households: fast expense logging, Spl
 
 **Automatic import**
 - Google Apps Script that reads bank card alert emails and creates expenses: AU Bank, SBI Card, Axis Bank, ICICI (debit and credit). Per-message dedupe, manual-entry duplicate guard, keyword category rules. See [docs/GMAIL_SYNC.md](docs/GMAIL_SYNC.md).
+- The alert parsers are also a standalone, zero-dependency npm package: [`indian-bank-alerts`](packages/indian-bank-alerts).
 
 **App**
 - Offline-first installable PWA; Clean light and Premium dark themes; ₹ INR default with multi-currency groups.
@@ -111,6 +112,7 @@ src/
     vault/           end-to-end encryption
   lib/               firebase init, crypto, types, theme, utils
 native/              Expo iOS app
+packages/            indian-bank-alerts (standalone npm package)
 scripts/             Gmail sync (Apps Script), icon generator
 firestore.rules      security rules
 ```
