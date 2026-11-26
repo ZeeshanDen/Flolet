@@ -2,31 +2,55 @@
 
 **Track spending. Split with anyone.**
 
-A personal-first expense tracker with Splitwise-style bill splitting, built as an installable PWA. Live at [flowlet-dev.web.app](https://flowlet-dev.web.app).
+A privacy-first expense tracker for Indian households: fast expense logging, Splitwise-style bill splitting, medicine stock tracking for caregivers, and automatic import of bank card alerts. Installable PWA plus a native iOS app (Expo). Live at [flowlet-dev.web.app](https://flowlet-dev.web.app).
+
+![Flowlet landing page](docs/screenshots/landing-light.png)
+
+<p>
+  <img src="docs/screenshots/signin-light.png" width="260" alt="Sign in, light theme">
+  <img src="docs/screenshots/signin-dark.png" width="260" alt="Sign in, dark theme">
+</p>
 
 ## Features
 
-- **Fast expense entry** — amount, category, done. Numpad-first focus-mode UI; log an expense in three taps.
-- **Insights** — day-wise and month-wise category breakdowns (donut + bars), totals and trends.
-- **Groups & invites** — create groups, invite people by email, real accounts.
-- **Five split types** — equal, exact amounts, percentages, shares (weighted), and +/- adjustments. Cent-exact reconciliation so shares always sum to the total.
-- **Balances & settle up** — per-member net balances, greedy debt simplification, record settlements.
-- **Manage categories** — add, edit, delete with custom icon + colour, from the Profile tab.
-- **Offline-first PWA** — installable on any phone, Firestore offline persistence, syncs when back online.
-- **Light/dark theme**, ₹ INR default with multi-currency support per group.
+**Expenses**
+- **Three-tap entry:** amount, category, done. Numpad sheet, custom categories with icon and colour.
+- **History:** month / all / custom-range views with totals and a daily spend chart; tap any entry to edit.
+- **Insights:** monthly and yearly category breakdowns, proportion bars, change vs. the previous period.
+
+**Splits**
+- **Groups with real accounts,** invited by email.
+- **Five split methods:** equal (with per-person include toggles), exact amounts, percentages, shares, and +/− adjustments. Paise-exact: shares always sum to the total.
+- **Balances, settle-up and debt simplification.**
+- **Activity history and Friends view:** every shared expense shows whether you lent or borrowed; pairwise balances with each person across all groups; any shared expense can be edited.
+
+**Medicines (for caregivers)**
+- Per-person medicine lists with dose schedules (morning / afternoon / evening / night, or weekly on a fixed day).
+- Run-out forecasting with colour-coded days-left, and a "refill soon" section.
+- **Order list** builder that computes exactly how much to buy until a chosen date, ready to copy or share to WhatsApp.
+- **Stock in** to update every medicine at once after a pharmacy run, and **monthly cost** from pack MRP vs. what you pay.
+- Native app: local refill and dose reminders (no server needed).
+
+**Automatic import**
+- Google Apps Script that reads bank card alert emails and creates expenses: AU Bank, SBI Card, Axis Bank, ICICI (debit and credit). Per-message dedupe, manual-entry duplicate guard, keyword category rules. See [docs/GMAIL_SYNC.md](docs/GMAIL_SYNC.md).
+
+**App**
+- Offline-first installable PWA; Clean light and Premium dark themes; ₹ INR default with multi-currency groups.
 
 ## Security & privacy
 
-- Email verification enforced **at the Firestore rules layer** (`email_verified` required on every read/write), not just in the UI.
-- Data encrypted in transit (TLS) and at rest (Google Cloud).
-- Personal data readable only by its owner; group data only by group members.
+- **Optional end-to-end encryption:** expense and medicine notes are encrypted on the device (PBKDF2 → AES-256-GCM, WebCrypto). The server only stores ciphertext; a recovery code is shown once.
+- **Email verification enforced in Firestore rules,** not just the UI.
+- Personal data readable only by its owner; group data only by members; group joins require a pending invite (validated in rules).
+- The Firebase web config in this repo is public by design; access is controlled entirely by `firestore.rules`.
 
 ## Stack
 
 | Layer | Tech |
 | --- | --- |
-| UI | React 18 + TypeScript + Vite, Tailwind CSS, lucide-react, Recharts |
-| State/data | TanStack Query, Zustand, Firestore realtime listeners |
+| Web | React 18 + TypeScript + Vite, Tailwind CSS, lucide-react, Recharts, Geist |
+| Native | React Native + Expo (iOS), expo-notifications, expo-secure-store |
+| Data | Firestore realtime listeners, TanStack Query, Zustand |
 | Backend | Firebase Auth (email + Google), Cloud Firestore, Firebase Hosting |
 | PWA | vite-plugin-pwa (service worker, manifest, icons) |
 
@@ -38,11 +62,18 @@ cp .env.example .env.local   # fill in your Firebase web config
 npm run dev
 ```
 
-No Firebase project yet? Run against the emulator instead:
+No Firebase project yet? Run against the emulator:
 
 ```bash
 npm run emulators            # auth :9877, firestore :8567, ui :4173
 VITE_USE_EMULATOR=true npm run dev
+```
+
+Native app (`native/`):
+
+```bash
+cd native && npm install
+npx expo start --ios
 ```
 
 ### Scripts
@@ -51,12 +82,13 @@ VITE_USE_EMULATOR=true npm run dev
 | --- | --- |
 | `npm run dev` | Vite dev server |
 | `npm run build` | Typecheck + production build to `dist/` |
-| `npm test` | Vitest unit tests (split math) |
-| `npm run lint` | ESLint |
+| `npm test` | Vitest unit tests (split math, medicine forecasting, crypto) |
 | `npm run emulators` | Firebase emulator suite |
 | `node scripts/gen-icons.mjs` | Regenerate PWA icons |
 
-### Deploy
+### Deploy your own copy
+
+Runs on Firebase's free tier.
 
 ```bash
 npm run build
@@ -67,27 +99,29 @@ firebase deploy --only hosting,firestore:rules --project <your-project>
 
 ```
 src/
-  components/        AppLayout (tab shell), BottomSheet
+  components/        AppLayout (dock nav), BottomSheet
   features/
     auth/            AuthContext, SignIn, VerifyEmail
     categories/      hooks, icons, Add/Manage sheets
-    expenses/        EntryScreen (focus mode), History, Edit sheet, Numpad
-    groups/          group CRUD, invites, detail screens
-    insights/        charts screen
-    marketing/       public landing page
-    profile/         profile + settings
-    split/           SplitEditor, splitCalc (+ tests), balances
-  lib/               firebase init, types, theme, utils
-firestore.rules      security rules (verified-email gated)
+    expenses/        EntryScreen, History, Edit sheet
+    groups/          groups, invites, activity, friends
+    insights/        charts
+    meds/            medicines, forecasting, order/stock-in/cost sheets
+    split/           SplitEditor, splitCalc, balances (+ tests)
+    vault/           end-to-end encryption
+  lib/               firebase init, crypto, types, theme, utils
+native/              Expo iOS app
+scripts/             Gmail sync (Apps Script), icon generator
+firestore.rules      security rules
 ```
-
-## Split math
-
-All five split types resolve to per-member cent amounts that sum exactly to the total — leftover cents are distributed deterministically. See [`src/features/split/splitCalc.ts`](src/features/split/splitCalc.ts) and its 14 unit tests.
 
 ## Roadmap
 
-- Receipt photo → OCR auto-fill
-- Client-side encryption of expense payloads (E2E)
-- Budgets & recurring expenses
-- Custom email domain for verification mail
+- SMS-based automatic import on iPhone (iOS Shortcuts + a small server function)
+- More bank parsers (HDFC, Kotak, Paytm) with fixture tests
+- Native app: groups and splits, home-screen widget, receipt photo OCR
+- Budgets and recurring expenses
+
+## License
+
+[MIT](LICENSE)

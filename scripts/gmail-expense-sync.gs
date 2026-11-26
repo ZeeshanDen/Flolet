@@ -29,7 +29,7 @@ var SUBJECT_QUERY =
 var CATEGORY_RULES = [
   // Anything "medic/medico/medical" defaults to Mom Health (recategorize to
   // Health by hand when it's not hers).
-  { re: /JANWA|MEDIC/i, cat: "Mom Health" },
+  { re: /MEDIC/i, cat: "Mom Health" }, // medico / medical / medplus
   { re: /PHARM|APOLLO|NETMEDS|1MG|PRACTO|HOSPITAL|CLINIC|DIAGNOST/i, cat: "Health" },
   { re: /INSTAMART/i, cat: "Groceries" }, // before Swiggy: Instamart is grocery
   { re: /SWIGGY|ZOMATO|BLINKIT|EATCLUB|DOMINO|MCDONALD|KFC/i, cat: "Food" },
